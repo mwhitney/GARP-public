@@ -1,0 +1,1020 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GARP + Momentum Scorecard</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #0b0d10;
+    --panel: #14171c;
+    --panel-2: #1b1f26;
+    --border: #2a2f38;
+    --text: #e6e9ee;
+    --muted: #8b93a1;
+    --accent: #4f9dff;
+    --green: #2ecc71;
+    --yellow: #e6b800;
+    --red: #e05a5a;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+  }
+  header {
+    padding: 20px 24px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  .header-right { display: flex; align-items: center; gap: 14px; }
+  header .meta { color: var(--muted); font-size: 12px; }
+
+  .btn {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .refresh-status {
+    padding: 8px 24px;
+    font-size: 12.5px;
+    color: var(--accent);
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .refresh-status.is-error { color: var(--red); }
+  .demo-banner {
+    padding: 8px 24px;
+    font-size: 12.5px;
+    color: var(--yellow);
+    background: rgba(230,184,0,0.10);
+    border-bottom: 1px solid var(--border);
+  }
+  .demo-banner .demo-tip { color: var(--muted); margin-left: 6px; }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 10px 24px 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  .tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    padding: 14px 24px;
+    flex-wrap: wrap;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  .controls input[type="text"], .controls select {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .controls input[type="text"] { min-width: 200px; }
+  .controls label { color: var(--muted); font-size: 12px; margin-right: 4px; }
+  .count { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--panel);
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  thead th:hover { color: var(--text); }
+  thead th.sorted { color: var(--accent); }
+  tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; }
+  tbody tr:hover { background: var(--panel-2); }
+  tbody td { padding: 9px 12px; white-space: nowrap; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.ticker { font-weight: 600; }
+  td.company { color: var(--muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+  td.num.component { font-size: 13px; }
+
+  .action-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .action-BUY_ADD { background: rgba(46,204,113,0.18); color: var(--green); }
+  .action-BUY { background: rgba(79,157,255,0.18); color: var(--accent); }
+  .action-WATCH { background: rgba(230,184,0,0.18); color: var(--yellow); }
+  .action-AVOID { background: rgba(224,90,90,0.18); color: var(--red); }
+
+  .detail-row td {
+    background: var(--panel);
+    padding: 16px 24px;
+    cursor: default;
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .bucket { }
+  .bucket-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .est-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(230,184,0,0.15);
+    color: var(--yellow);
+    font-size: 10px;
+    text-transform: none;
+    letter-spacing: 0;
+    cursor: help;
+  }
+  .bar-track { background: var(--panel-2); border-radius: 4px; height: 8px; overflow: hidden; margin-bottom: 4px; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .bucket-value { font-size: 13px; font-variant-numeric: tabular-nums; }
+  .raw-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px 20px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .raw-stats div span { color: var(--muted); display: block; font-size: 11px; }
+  .raw-stats div.stat-missing { color: var(--muted); font-style: italic; }
+  .raw-stats div.stat-missing span::after { content: " (missing)"; }
+
+  .empty { text-align: center; color: var(--muted); padding: 40px; }
+
+  td.sector-name { font-weight: 600; cursor: pointer; }
+  td.sector-name:hover { color: var(--accent); text-decoration: underline; }
+  .breadth-cell { min-width: 160px; }
+  .breadth-bar {
+    display: flex;
+    height: 10px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--panel-2);
+    margin-bottom: 4px;
+  }
+  .breadth-seg:first-child { border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
+  .breadth-seg:last-child { border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
+  .breadth-label { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .sector-note {
+    padding: 14px 24px;
+    color: var(--muted);
+    font-size: 12.5px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  .sector-rel {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .sector-rel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin-top: 10px;
+  }
+  .pctile-value { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .sector-rel-note { color: var(--muted); font-size: 11.5px; margin: 10px 0 0; }
+
+  .flag-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 600;
+    cursor: help;
+  }
+  .flag-loss_cut { background: rgba(224,90,90,0.18); color: var(--red); }
+  .flag-profit_take { background: rgba(230,184,0,0.18); color: var(--yellow); }
+  .portfolio-note {
+    padding: 14px 24px;
+    color: var(--muted);
+    font-size: 12.5px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  td.unmatched { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>GARP + Momentum Scorecard</h1>
+  <div class="header-right">
+    <div class="meta" id="meta"></div>
+    <button class="btn" id="rmRefreshBtn" title="Re-run the Schwab price-history + Fama-French regression (slower, needs Schwab auth)">⟳ Refresh Residual Mom.</button>
+    <button class="btn" id="refreshBtn">⟳ Refresh Data</button>
+  </div>
+</header>
+<div class="demo-banner" id="demoBanner" hidden>
+  <b>DEMO</b> &mdash; every company, ticker and number on this page is fictional: invented inputs scored by the real model, not real stocks, and not investment advice.
+  <span class="demo-tip">Try: click a row to expand it &middot; click a column header to sort &middot; filter by sector or action &middot; open the Sectors and Portfolio tabs.</span>
+</div>
+<div class="refresh-status" id="refreshStatus" hidden></div>
+<div class="refresh-status" id="rmRefreshStatus" hidden></div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-view="scorecard">Scorecard</button>
+  <button class="tab-btn" data-view="sectors">Sectors</button>
+  <button class="tab-btn" data-view="portfolio">Portfolio</button>
+</div>
+
+<div id="scorecardView">
+  <div class="controls">
+    <input type="text" id="search" placeholder="Search ticker or company…">
+    <label for="sector">Sector</label>
+    <select id="sector"><option value="">All</option></select>
+    <label for="action">Action</label>
+    <select id="action">
+      <option value="">All</option>
+      <option value="BUY/ADD">BUY/ADD</option>
+      <option value="BUY">BUY</option>
+      <option value="WATCH">WATCH</option>
+      <option value="AVOID">AVOID</option>
+    </select>
+    <div class="count" id="count"></div>
+  </div>
+
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th data-key="ticker">Ticker</th>
+        <th data-key="company">Company</th>
+        <th data-key="sector">Sector</th>
+        <th data-key="sectorRank" class="num" title="Rank within sector by FinalScore">Sector Rank</th>
+        <th data-key="price" class="num">Price</th>
+        <th data-key="momentum_score" class="num" title="out of 40">Momentum</th>
+        <th data-key="valuation_score" class="num" title="out of 25">Valuation</th>
+        <th data-key="quality_score" class="num" title="out of 20">Quality</th>
+        <th data-key="balance_score" class="num" title="out of 15">Balance</th>
+        <th data-key="late_leg_penalty" class="num" title="out of 10, subtracted">Penalty</th>
+        <th data-key="residual_momentum_score" class="num" title="Not part of FinalScore -- a separate signal (Blitz, Huij & Martens, 2011). See row detail.">Res. Mom.</th>
+        <th data-key="final_score" class="num">Score</th>
+        <th data-key="action">Action</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  </div>
+  <div class="empty" id="empty" style="display:none">No tickers match the current filters.</div>
+</div>
+
+<div id="sectorsView" hidden>
+  <div class="sector-note">Average of every scored <span id="universeLabel">S&amp;P 500</span> stock in each sector -- same components as the Scorecard tab. Industry-level momentum has its own documented edge on top of stock-picking (Moskowitz &amp; Grinblatt, 1999), and normalizing valuation/quality by sector is standard practice since the raw bands above run on absolute thresholds that structurally favor some sectors over others. Click a sector to filter the Scorecard tab to it.</div>
+  <div class="table-wrap">
+  <table>
+    <thead id="sectorHead">
+      <tr>
+        <th data-key="sector">Sector</th>
+        <th data-key="count" class="num">Stocks</th>
+        <th data-key="momentum" class="num" title="out of 40">Momentum</th>
+        <th data-key="valuation" class="num" title="out of 25">Valuation</th>
+        <th data-key="quality" class="num" title="out of 20">Quality</th>
+        <th data-key="balance" class="num" title="out of 15">Balance</th>
+        <th data-key="penalty" class="num" title="out of 10, subtracted">Penalty</th>
+        <th data-key="final" class="num">Avg Score</th>
+        <th data-key="buyPct" class="num" title="% scored BUY or BUY/ADD">Breadth</th>
+      </tr>
+    </thead>
+    <tbody id="sectorRows"></tbody>
+  </table>
+  </div>
+</div>
+
+<div id="portfolioView" hidden>
+  <div class="portfolio-note" id="portfolioNote">Loading…</div>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Account</th>
+        <th>Symbol</th>
+        <th>Description</th>
+        <th class="num">Qty</th>
+        <th class="num">Avg Cost</th>
+        <th class="num">Price</th>
+        <th class="num">Market Value</th>
+        <th class="num">Unrealized</th>
+        <th class="num">Unrealized %</th>
+        <th>Sector</th>
+        <th class="num">Score</th>
+        <th>Action</th>
+        <th>Flag</th>
+      </tr>
+    </thead>
+    <tbody id="portfolioRows"></tbody>
+  </table>
+  </div>
+</div>
+
+<!-- The pipeline (build_dashboard.py) fills the two data blocks below. In the raw
+     template they hold an unreplaced placeholder, which is not valid JSON, so
+     the page falls back to the fictional demo-data block that follows. -->
+<script type="application/json" id="scorecard-data">__SCORECARD_DATA__</script>
+<script type="application/json" id="residual-momentum-data">__RESIDUAL_MOMENTUM_DATA__</script>
+<!-- DEMO-DATA-START (generated by backend/make_demo_data.py -- fictional, do not edit by hand) -->
+<script type="application/json" id="demo-data">{"scorecard":{"generated_at":"2026-10-12T14:00:00+00:00","count":63,"rows":[{"ticker":"LDGR","base_score":86.0,"momentum_score":38.0,"valuation_score":16.0,"quality_score":20.0,"balance_score":12.0,"late_leg_penalty":0.0,"final_score":86.0,"action":"BUY/ADD","notes":"A-grade alignment","missing_fields":[],"snap":{"ticker":"LDGR","company":"Ledgerton Asset Management","price":24.92,"sector":"Financial Services","pe_ttm":24.99,"fwd_pe":18.1,"peg":1.67,"debt_eq":0.65,"current_ratio":2.53,"rsi14":59.7,"sma20_pct":3.5,"sma50_pct":9.0,"sma200_pct":9.5,"perf_week_pct":2.2,"perf_month_pct":7.3,"perf_quarter_pct":14.6,"rel_volume":1.24,"pct_from_52w_high":-2.5,"roic":20.8,"roe":36.6,"profit_margin":27.3}},{"ticker":"WNDR","base_score":85.0,"momentum_score":40.0,"valuation_score":12.0,"quality_score":18.0,"balance_score":15.0,"late_leg_penalty":0.5,"final_score":84.5,"action":"BUY/ADD","notes":"A-grade alignment","missing_fields":[],"snap":{"ticker":"WNDR","company":"Windrow Aerospace","price":421.97,"sector":"Industrials","pe_ttm":38.36,"fwd_pe":32.7,"peg":1.36,"debt_eq":0.47,"current_ratio":1.62,"rsi14":58.0,"sma20_pct":4.2,"sma50_pct":16.4,"sma200_pct":16.7,"perf_week_pct":2.5,"perf_month_pct":8.7,"perf_quarter_pct":21.6,"rel_volume":1.38,"pct_from_52w_high":-1.7,"roic":20.7,"roe":16.8,"profit_margin":17.3}},{"ticker":"VYGR","base_score":87.0,"momentum_score":38.0,"valuation_score":18.0,"quality_score":16.0,"balance_score":15.0,"late_leg_penalty":2.5,"final_score":84.5,"action":"BUY/ADD","notes":"A-grade alignment","missing_fields":[],"snap":{"ticker":"VYGR","company":"Voyagerly Travel","price":77.95,"sector":"Consumer Cyclical","pe_ttm":38.57,"fwd_pe":35.6,"peg":1.07,"debt_eq":0.46,"current_ratio":2.01,"rsi14":63.5,"sma20_pct":8.3,"sma50_pct":14.9,"sma200_pct":34.8,"perf_week_pct":3.2,"perf_month_pct":9.7,"perf_quarter_pct":31.5,"rel_volume":1.64,"pct_from_52w_high":-0.4,"roic":18.8,"roe":29.1,"profit_margin":14.5}},{"ticker":"GRDN","base_score":83.0,"momentum_score":36.0,"valuation_score":12.0,"quality_score":20.0,"balance_score":15.0,"late_leg_penalty":0.0,"final_score":83.0,"action":"BUY/ADD","notes":"A-grade alignment","missing_fields":[],"snap":{"ticker":"GRDN","company":"Gridnorth Electrical","price":136.26,"sector":"Industrials","pe_ttm":29.29,"fwd_pe":27.9,"peg":1.46,"debt_eq":0.17,"current_ratio":2.79,"rsi14":56.1,"sma20_pct":3.2,"sma50_pct":9.9,"sma200_pct":14.4,"perf_week_pct":2.8,"perf_month_pct":4.8,"perf_quarter_pct":9.3,"rel_volume":1.13,"pct_from_52w_high":-1.7,"roic":24.9,"roe":32.3,"profit_margin":27.5}},{"ticker":"HLNX","base_score":85.0,"momentum_score":38.0,"valuation_score":16.0,"quality_score":16.0,"balance_score":15.0,"late_leg_penalty":4.5,"final_score":80.5,"action":"BUY/ADD","notes":"A-grade alignment","missing_fields":[],"snap":{"ticker":"HLNX","company":"Helixnet Semiconductor","price":221.16,"sector":"Technology","pe_ttm":24.48,"fwd_pe":23.7,"peg":1.72,"debt_eq":0.49,"current_ratio":2.04,"rsi14":65.3,"sma20_pct":7.0,"sma50_pct":17.6,"sma200_pct":37.2,"perf_week_pct":0.1,"perf_month_pct":6.1,"perf_quarter_pct":33.9,"rel_volume":1.05,"pct_from_52w_high":-0.2,"roic":14.1,"roe":24.1,"profit_margin":13.3}},{"ticker":"VRTB","base_score":85.0,"momentum_score":38.0,"valuation_score":12.0,"quality_score":20.0,"balance_score":15.0,"late_leg_penalty":4.5,"final_score":80.5,"action":"BUY/ADD","notes":"A-grade alignment","missing_fields":[],"snap":{"ticker":"VRTB","company":"Vertebra Biologics","price":187.07,"sector":"Healthcare","pe_ttm":38.73,"fwd_pe":27.7,"peg":1.76,"debt_eq":0.38,"current_ratio":1.27,"rsi14":68.2,"sma20_pct":8.2,"sma50_pct":17.6,"sma200_pct":16.1,"perf_week_pct":0.5,"perf_month_pct":14.1,"perf_quarter_pct":22.8,"rel_volume":1.31,"pct_from_52w_high":-0.2,"roic":25.0,"roe":21.1,"profit_margin":15.6}},{"ticker":"MRKT","base_score":83.0,"momentum_score":38.0,"valuation_score":22.0,"quality_score":18.0,"balance_score":5.0,"late_leg_penalty":2.5,"final_score":80.5,"action":"BUY/ADD","notes":"A-grade alignment","missing_fields":["debt_eq"],"snap":{"ticker":"MRKT","company":"Marketstone Exchange","price":72.34,"sector":"Financial Services","pe_ttm":22.48,"fwd_pe":21.1,"peg":1.02,"debt_eq":null,"current_ratio":1.23,"rsi14":61.2,"sma20_pct":4.2,"sma50_pct":11.6,"sma200_pct":19.4,"perf_week_pct":1.1,"perf_month_pct":11.4,"perf_quarter_pct":27.4,"rel_volume":1.21,"pct_from_52w_high":-2.1,"roic":18.8,"roe":27.2,"profit_margin":22.4}},{"ticker":"HMST","base_score":79.0,"momentum_score":23.0,"valuation_score":25.0,"quality_score":16.0,"balance_score":15.0,"late_leg_penalty":0.0,"final_score":79.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"HMST","company":"Homestead Furnishings","price":197.68,"sector":"Consumer Cyclical","pe_ttm":10.84,"fwd_pe":8.3,"peg":1.0,"debt_eq":0.26,"current_ratio":1.39,"rsi14":47.1,"sma20_pct":-2.9,"sma50_pct":3.8,"sma200_pct":1.6,"perf_week_pct":-0.4,"perf_month_pct":0.0,"perf_quarter_pct":-2.0,"rel_volume":0.87,"pct_from_52w_high":-15.5,"roic":15.1,"roe":21.6,"profit_margin":12.3}},{"ticker":"DTRV","base_score":81.0,"momentum_score":34.0,"valuation_score":12.0,"quality_score":20.0,"balance_score":15.0,"late_leg_penalty":3.0,"final_score":78.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"DTRV","company":"Datarive Analytics","price":239.16,"sector":"Technology","pe_ttm":28.67,"fwd_pe":25.2,"peg":1.75,"debt_eq":0.24,"current_ratio":2.22,"rsi14":52.5,"sma20_pct":4.2,"sma50_pct":8.2,"sma200_pct":17.6,"perf_week_pct":-0.6,"perf_month_pct":5.0,"perf_quarter_pct":6.7,"rel_volume":1.12,"pct_from_52w_high":-5.3,"roic":25.2,"roe":37.8,"profit_margin":24.3}},{"ticker":"PLSE","base_score":83.0,"momentum_score":36.0,"valuation_score":12.0,"quality_score":20.0,"balance_score":15.0,"late_leg_penalty":5.0,"final_score":78.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"PLSE","company":"Pulsewell Diagnostics","price":31.26,"sector":"Healthcare","pe_ttm":29.79,"fwd_pe":26.9,"peg":1.63,"debt_eq":0.21,"current_ratio":2.61,"rsi14":54.9,"sma20_pct":5.5,"sma50_pct":8.7,"sma200_pct":21.2,"perf_week_pct":-0.4,"perf_month_pct":7.3,"perf_quarter_pct":8.4,"rel_volume":0.93,"pct_from_52w_high":-5.4,"roic":27.8,"roe":35.1,"profit_margin":30.6}},{"ticker":"HRBR","base_score":77.0,"momentum_score":23.0,"valuation_score":25.0,"quality_score":14.0,"balance_score":15.0,"late_leg_penalty":0.0,"final_score":77.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"HRBR","company":"Harborline Bancorp","price":284.74,"sector":"Financial Services","pe_ttm":15.2,"fwd_pe":11.0,"peg":0.6,"debt_eq":0.23,"current_ratio":1.47,"rsi14":48.9,"sma20_pct":-0.0,"sma50_pct":4.7,"sma200_pct":2.7,"perf_week_pct":0.6,"perf_month_pct":1.0,"perf_quarter_pct":0.2,"rel_volume":0.88,"pct_from_52w_high":-16.3,"roic":19.7,"roe":18.6,"profit_margin":13.9}},{"ticker":"NRTH","base_score":77.0,"momentum_score":26.0,"valuation_score":25.0,"quality_score":14.0,"balance_score":12.0,"late_leg_penalty":0.0,"final_score":77.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"NRTH","company":"Northgate Petroleum","price":45.53,"sector":"Energy","pe_ttm":12.74,"fwd_pe":10.4,"peg":0.55,"debt_eq":0.78,"current_ratio":1.79,"rsi14":51.7,"sma20_pct":0.2,"sma50_pct":-3.5,"sma200_pct":6.6,"perf_week_pct":1.8,"perf_month_pct":3.6,"perf_quarter_pct":2.4,"rel_volume":1.08,"pct_from_52w_high":-21.1,"roic":12.7,"roe":17.5,"profit_margin":13.6}},{"ticker":"SNRG","base_score":81.0,"momentum_score":38.0,"valuation_score":12.0,"quality_score":16.0,"balance_score":15.0,"late_leg_penalty":4.5,"final_score":76.5,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"SNRG","company":"Sunridge Renewables","price":356.49,"sector":"Energy","pe_ttm":45.48,"fwd_pe":33.8,"peg":1.74,"debt_eq":0.28,"current_ratio":2.13,"rsi14":60.8,"sma20_pct":7.3,"sma50_pct":12.2,"sma200_pct":35.9,"perf_week_pct":0.7,"perf_month_pct":14.8,"perf_quarter_pct":17.5,"rel_volume":1.07,"pct_from_52w_high":-0.4,"roic":19.6,"roe":18.7,"profit_margin":20.7}},{"ticker":"RDGL","base_score":78.0,"momentum_score":34.0,"valuation_score":12.0,"quality_score":20.0,"balance_score":12.0,"late_leg_penalty":2.0,"final_score":76.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"RDGL","company":"Ridgeline Midstream","price":513.87,"sector":"Energy","pe_ttm":27.51,"fwd_pe":25.8,"peg":1.68,"debt_eq":0.6,"current_ratio":2.54,"rsi14":62.4,"sma20_pct":5.1,"sma50_pct":9.4,"sma200_pct":14.8,"perf_week_pct":2.5,"perf_month_pct":8.7,"perf_quarter_pct":12.5,"rel_volume":1.09,"pct_from_52w_high":-7.1,"roic":23.1,"roe":29.5,"profit_margin":31.8}},{"ticker":"NVLK","base_score":80.0,"momentum_score":38.0,"valuation_score":12.0,"quality_score":18.0,"balance_score":12.0,"late_leg_penalty":4.5,"final_score":75.5,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"NVLK","company":"Novalink Systems","price":556.95,"sector":"Technology","pe_ttm":44.95,"fwd_pe":34.8,"peg":1.22,"debt_eq":0.98,"current_ratio":1.48,"rsi14":66.1,"sma20_pct":4.4,"sma50_pct":15.8,"sma200_pct":26.9,"perf_week_pct":3.2,"perf_month_pct":10.6,"perf_quarter_pct":27.2,"rel_volume":0.99,"pct_from_52w_high":-3.5,"roic":24.6,"roe":18.5,"profit_margin":23.4}},{"ticker":"CPFD","base_score":80.0,"momentum_score":38.0,"valuation_score":12.0,"quality_score":18.0,"balance_score":12.0,"late_leg_penalty":4.5,"final_score":75.5,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"CPFD","company":"Copperfield Mining","price":261.0,"sector":"Basic Materials","pe_ttm":41.29,"fwd_pe":30.8,"peg":1.46,"debt_eq":0.71,"current_ratio":1.14,"rsi14":68.6,"sma20_pct":5.5,"sma50_pct":13.9,"sma200_pct":30.6,"perf_week_pct":1.8,"perf_month_pct":14.3,"perf_quarter_pct":30.4,"rel_volume":1.02,"pct_from_52w_high":-3.9,"roic":23.6,"roe":28.2,"profit_margin":13.9}},{"ticker":"HYGX","base_score":76.0,"momentum_score":34.0,"valuation_score":7.0,"quality_score":20.0,"balance_score":15.0,"late_leg_penalty":2.0,"final_score":74.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"HYGX","company":"Hygienix Household","price":90.14,"sector":"Consumer Defensive","pe_ttm":27.9,"fwd_pe":27.3,"peg":1.97,"debt_eq":0.19,"current_ratio":2.03,"rsi14":58.1,"sma20_pct":4.8,"sma50_pct":7.1,"sma200_pct":9.5,"perf_week_pct":1.5,"perf_month_pct":6.8,"perf_quarter_pct":6.5,"rel_volume":0.83,"pct_from_52w_high":-7.6,"roic":24.9,"roe":28.8,"profit_margin":19.4}},{"ticker":"STMK","base_score":74.0,"momentum_score":20.0,"valuation_score":25.0,"quality_score":14.0,"balance_score":15.0,"late_leg_penalty":0.0,"final_score":74.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"STMK","company":"Steelmark Alloys","price":72.06,"sector":"Basic Materials","pe_ttm":8.93,"fwd_pe":8.3,"peg":0.9,"debt_eq":0.22,"current_ratio":1.93,"rsi14":52.7,"sma20_pct":-0.7,"sma50_pct":-3.5,"sma200_pct":7.9,"perf_week_pct":0.8,"perf_month_pct":-2.9,"perf_quarter_pct":2.4,"rel_volume":1.15,"pct_from_52w_high":-27.1,"roic":17.1,"roe":19.8,"profit_margin":11.1}},{"ticker":"QRTZ","base_score":75.0,"momentum_score":36.0,"valuation_score":7.0,"quality_score":20.0,"balance_score":12.0,"late_leg_penalty":2.0,"final_score":73.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"QRTZ","company":"Quartzline Software","price":33.5,"sector":"Technology","pe_ttm":35.11,"fwd_pe":28.1,"peg":1.97,"debt_eq":0.69,"current_ratio":1.99,"rsi14":55.9,"sma20_pct":1.2,"sma50_pct":3.0,"sma200_pct":20.6,"perf_week_pct":0.2,"perf_month_pct":8.3,"perf_quarter_pct":8.5,"rel_volume":1.28,"pct_from_52w_high":-6.4,"roic":22.8,"roe":36.2,"profit_margin":25.5}},{"ticker":"BYTW","base_score":76.0,"momentum_score":25.0,"valuation_score":25.0,"quality_score":14.0,"balance_score":12.0,"late_leg_penalty":3.0,"final_score":73.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"BYTW","company":"Bytewell Hardware","price":509.07,"sector":"Technology","pe_ttm":11.79,"fwd_pe":11.2,"peg":0.97,"debt_eq":0.62,"current_ratio":1.9,"rsi14":44.1,"sma20_pct":0.2,"sma50_pct":-0.1,"sma200_pct":1.5,"perf_week_pct":-0.8,"perf_month_pct":1.8,"perf_quarter_pct":6.6,"rel_volume":0.8,"pct_from_52w_high":-15.9,"roic":12.0,"roe":13.3,"profit_margin":8.9}},{"ticker":"LGCR","base_score":75.0,"momentum_score":38.0,"valuation_score":12.0,"quality_score":20.0,"balance_score":5.0,"late_leg_penalty":2.0,"final_score":73.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":["debt_eq"],"snap":{"ticker":"LGCR","company":"Logisticore Industrial REIT","price":66.91,"sector":"Real Estate","pe_ttm":36.44,"fwd_pe":29.0,"peg":1.35,"debt_eq":null,"current_ratio":2.08,"rsi14":54.8,"sma20_pct":2.6,"sma50_pct":5.8,"sma200_pct":18.2,"perf_week_pct":0.2,"perf_month_pct":6.7,"perf_quarter_pct":16.4,"rel_volume":1.01,"pct_from_52w_high":-4.4,"roic":24.9,"roe":20.2,"profit_margin":26.3}},{"ticker":"ZNTH","base_score":75.0,"momentum_score":28.0,"valuation_score":12.0,"quality_score":20.0,"balance_score":15.0,"late_leg_penalty":2.5,"final_score":72.5,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":["sma200_pct"],"snap":{"ticker":"ZNTH","company":"Zenthra Security","price":32.51,"sector":"Technology","pe_ttm":33.17,"fwd_pe":26.6,"peg":1.24,"debt_eq":0.29,"current_ratio":1.45,"rsi14":64.0,"sma20_pct":5.0,"sma50_pct":16.2,"sma200_pct":null,"perf_week_pct":3.3,"perf_month_pct":5.0,"perf_quarter_pct":18.6,"rel_volume":1.04,"pct_from_52w_high":-3.6,"roic":23.8,"roe":28.2,"profit_margin":18.9}},{"ticker":"RVTX","base_score":74.0,"momentum_score":23.0,"valuation_score":25.0,"quality_score":14.0,"balance_score":12.0,"late_leg_penalty":3.0,"final_score":71.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"RVTX","company":"Rivetex Machinery","price":136.21,"sector":"Industrials","pe_ttm":15.22,"fwd_pe":13.6,"peg":0.99,"debt_eq":0.61,"current_ratio":1.12,"rsi14":44.4,"sma20_pct":-3.1,"sma50_pct":0.6,"sma200_pct":0.6,"perf_week_pct":-1.9,"perf_month_pct":1.1,"perf_quarter_pct":-4.5,"rel_volume":1.12,"pct_from_52w_high":-15.7,"roic":12.4,"roe":12.2,"profit_margin":10.1}},{"ticker":"SLVR","base_score":70.0,"momentum_score":17.0,"valuation_score":25.0,"quality_score":16.0,"balance_score":12.0,"late_leg_penalty":0.0,"final_score":70.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"SLVR","company":"Silverbrook Savings","price":133.49,"sector":"Financial Services","pe_ttm":11.02,"fwd_pe":9.3,"peg":0.77,"debt_eq":0.89,"current_ratio":1.75,"rsi14":46.6,"sma20_pct":-3.2,"sma50_pct":-3.6,"sma200_pct":3.6,"perf_week_pct":-0.4,"perf_month_pct":-0.0,"perf_quarter_pct":4.0,"rel_volume":1.08,"pct_from_52w_high":-23.2,"roic":13.9,"roe":21.2,"profit_margin":14.4}},{"ticker":"SNKR","base_score":75.0,"momentum_score":38.0,"valuation_score":7.0,"quality_score":18.0,"balance_score":12.0,"late_leg_penalty":6.5,"final_score":68.5,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"SNKR","company":"Sneakerly Brands","price":51.06,"sector":"Consumer Cyclical","pe_ttm":32.23,"fwd_pe":31.2,"peg":2.08,"debt_eq":0.83,"current_ratio":1.42,"rsi14":68.9,"sma20_pct":10.0,"sma50_pct":19.9,"sma200_pct":54.0,"perf_week_pct":1.5,"perf_month_pct":12.1,"perf_quarter_pct":37.1,"rel_volume":1.23,"pct_from_52w_high":-0.3,"roic":14.0,"roe":29.0,"profit_margin":19.1}},{"ticker":"GRCR","base_score":68.0,"momentum_score":14.0,"valuation_score":25.0,"quality_score":14.0,"balance_score":15.0,"late_leg_penalty":0.0,"final_score":68.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"GRCR","company":"Grocerly Markets","price":169.26,"sector":"Consumer Defensive","pe_ttm":14.73,"fwd_pe":12.2,"peg":0.78,"debt_eq":0.47,"current_ratio":1.06,"rsi14":51.2,"sma20_pct":2.2,"sma50_pct":-2.2,"sma200_pct":-4.9,"perf_week_pct":-1.1,"perf_month_pct":-4.0,"perf_quarter_pct":-3.8,"rel_volume":0.9,"pct_from_52w_high":-24.3,"roic":17.7,"roe":17.3,"profit_margin":8.2}},{"ticker":"UNMR","base_score":74.0,"momentum_score":35.0,"valuation_score":7.0,"quality_score":20.0,"balance_score":12.0,"late_leg_penalty":7.0,"final_score":67.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"UNMR","company":"Undermark Reinsurance","price":609.29,"sector":"Financial Services","pe_ttm":46.61,"fwd_pe":37.0,"peg":2.49,"debt_eq":0.87,"current_ratio":1.88,"rsi14":71.0,"sma20_pct":6.3,"sma50_pct":21.2,"sma200_pct":45.7,"perf_week_pct":0.6,"perf_month_pct":13.1,"perf_quarter_pct":22.4,"rel_volume":1.11,"pct_from_52w_high":-2.8,"roic":22.4,"roe":27.5,"profit_margin":20.9}},{"ticker":"CLRX","base_score":66.0,"momentum_score":15.0,"valuation_score":25.0,"quality_score":14.0,"balance_score":12.0,"late_leg_penalty":0.0,"final_score":66.0,"action":"BUY","notes":"B-grade; confirm entry trigger","missing_fields":[],"snap":{"ticker":"CLRX","company":"Clearbrook Pharma","price":59.64,"sector":"Healthcare","pe_ttm":12.34,"fwd_pe":9.8,"peg":0.88,"debt_eq":0.73,"current_ratio":1.41,"rsi14":43.6,"sma20_pct":0.8,"sma50_pct":-4.6,"sma200_pct":-4.5,"perf_week_pct":1.8,"perf_month_pct":-0.5,"perf_quarter_pct":-2.6,"rel_volume":1.09,"pct_from_52w_high":-14.2,"roic":13.7,"roe":16.2,"profit_margin":14.7}},{"ticker":"WNGP","base_score":62.0,"momentum_score":26.0,"valuation_score":12.0,"quality_score":12.0,"balance_score":12.0,"late_leg_penalty":0.0,"final_score":62.0,"action":"WATCH","notes":"Needs inflection trigger","missing_fields":[],"snap":{"ticker":"WNGP","company":"Windgate Power","price":22.77,"sector":"Utilities","pe_ttm":31.79,"fwd_pe":25.3,"peg":1.69,"debt_eq":0.76,"current_ratio":1.29,"rsi14":56.8,"sma20_pct":2.8,"sma50_pct":-2.5,"sma200_pct":9.1,"perf_week_pct":-0.0,"perf_month_pct":3.6,"perf_quarter_pct":0.5,"rel_volume":1.22,"pct_from_52w_high":-12.7,"roic":12.5,"roe":11.9,"profit_margin":8.3}},{"ticker":"SCNS","base_score":60.0,"momentum_score":26.0,"valuation_score":11.0,"quality_score":11.0,"balance_score":12.0,"late_leg_penalty":0.0,"final_score":60.0,"action":"WATCH","notes":"Needs inflection trigger","missing_fields":[],"snap":{"ticker":"SCNS","company":"Socialnest","price":242.54,"sector":"Communication Services","pe_ttm":16.19,"fwd_pe":15.9,"peg":1.83,"debt_eq":0.52,"current_ratio":1.35,"rsi14":56.5,"sma20_pct":0.6,"sma50_pct":-0.3,"sma200_pct":1.3,"perf_week_pct":2.3,"perf_month_pct":2.9,"perf_quarter_pct":-2.1,"rel_volume":1.29,"pct_from_52w_high":-12.3,"roic":11.7,"roe":12.0,"profit_margin":10.0}},{"ticker":"CLDF","base_score":62.0,"momentum_score":28.0,"valuation_score":11.0,"quality_score":11.0,"balance_score":12.0,"late_leg_penalty":3.0,"final_score":59.0,"action":"WATCH","notes":"Needs inflection trigger","missing_fields":[],"snap":{"ticker":"CLDF","company":"Cloudfern Platforms","price":164.18,"sector":"Technology","pe_ttm":25.15,"fwd_pe":18.1,"peg":2.02,"debt_eq":1.0,"current_ratio":1.06,"rsi14":56.5,"sma20_pct":3.8,"sma50_pct":1.6,"sma200_pct":-2.6,"perf_week_pct":-1.9,"perf_month_pct":5.1,"perf_quarter_pct":11.8,"rel_volume":0.88,"pct_from_52w_high":-8.6,"roic":8.8,"roe":15.1,"profit_margin":9.0}},{"ticker":"BVRG","base_score":59.0,"momentum_score":25.0,"valuation_score":11.0,"quality_score":11.0,"balance_score":12.0,"late_leg_penalty":0.0,"final_score":59.0,"action":"WATCH","notes":"Needs inflection trigger","missing_fields":[],"snap":{"ticker":"BVRG","company":"Beveridge Beverages","price":307.92,"sector":"Consumer Defensive","pe_ttm":17.38,"fwd_pe":15.5,"peg":2.15,"debt_eq":0.83,"current_ratio":1.19,"rsi14":44.8,"sma20_pct":2.6,"sma50_pct":5.4,"sma200_pct":9.4,"perf_week_pct":2.8,"perf_month_pct":-2.1,"perf_quarter_pct":-4.8,"rel_volume":1.22,"pct_from_52w_high":-12.8,"roic":9.6,"roe":18.4,"profit_margin":8.0}},{"ticker":"LMNR","base_score":58.0,"momentum_score":21.0,"valuation_score":11.0,"quality_score":14.0,"balance_score":12.0,"late_leg_penalty":0.0,"final_score":58.0,"action":"WATCH","notes":"Needs inflection trigger","missing_fields":[],"snap":{"ticker":"LMNR","company":"Lumenra Photonics","price":61.41,"sector":"Technology","pe_ttm":19.65,"fwd_pe":16.6,"peg":1.92,"debt_eq":0.91,"current_ratio":1.04,"rsi14":44.3,"sma20_pct":-1.5,"sma50_pct":0.0,"sma200_pct":0.7,"perf_week_pct":2.2,"perf_month_pct":-1.3,"perf_quarter_pct":-2.7,"rel_volume":0.92,"pct_from_52w_high":-6.0,"roic":14.2,"roe":15.7,"profit_margin":12.0}},{"ticker":"FRGE","base_score":58.0,"momentum_score":21.0,"valuation_score":11.0,"quality_score":14.0,"balance_score":12.0,"late_leg_penalty":0.0,"final_score":58.0,"action":"WATCH","notes":"Needs inflection trigger","missing_fields":[],"snap":{"ticker":"FRGE","company":"Forgeway Industrial","price":39.23,"sector":"Industrials","pe_ttm":27.04,"fwd_pe":24.6,"peg":2.14,"debt_eq":0.97,"current_ratio":1.63,"rsi14":47.9,"sma20_pct":1.9,"sma50_pct":-0.7,"sma200_pct":1.4,"perf_week_pct":2.6,"perf_month_pct":-2.3,"perf_quarter_pct":-3.2,"rel_volume":1.07,"pct_from_52w_high":-17.7,"roic":12.9,"roe":14.2,"profit_margin":9.6}},{"ticker":"PXLR","base_score":66.0,"momentum_score":35.0,"valuation_score":7.0,"quality_score":16.0,"balance_score":8.0,"late_leg_penalty":10.0,"final_score":56.0,"action":"WATCH","notes":"Needs inflection trigger","missing_fields":[],"snap":{"ticker":"PXLR","company":"Pixelrow Interactive","price":316.58,"sector":"Technology","pe_ttm":38.85,"fwd_pe":32.6,"peg":1.97,"debt_eq":1.02,"current_ratio":1.23,"rsi14":71.5,"sma20_pct":6.9,"sma50_pct":16.9,"sma200_pct":56.7,"perf_week_pct":-2.8,"perf_month_pct":16.4,"perf_quarter_pct":27.9,"rel_volume":0.7,"pct_from_52w_high":-0.7,"roic":14.6,"roe":27.3,"profit_margin":12.9}},{"ticker":"SLRK","base_score":65.0,"momentum_score":35.0,"valuation_score":0.0,"quality_score":18.0,"balance_score":12.0,"late_leg_penalty":9.0,"final_score":56.0,"action":"WATCH","notes":"Needs inflection trigger","missing_fields":[],"snap":{"ticker":"SLRK","company":"Streamlark Media","price":33.71,"sector":"Communication Services","pe_ttm":44.89,"fwd_pe":42.9,"peg":2.8,"debt_eq":0.61,"current_ratio":1.11,"rsi14":78.3,"sma20_pct":7.5,"sma50_pct":24.4,"sma200_pct":52.5,"perf_week_pct":2.4,"perf_month_pct":18.7,"perf_quarter_pct":23.2,"rel_volume":1.03,"pct_from_52w_high":-0.7,"roic":15.9,"roe":29.4,"profit_margin":20.9}},{"ticker":"AUTV","base_score":55.0,"momentum_score":0.0,"valuation_score":25.0,"quality_score":18.0,"balance_score":12.0,"late_leg_penalty":0.0,"final_score":55.0,"action":"AVOID","notes":"Falling-knife filter triggered","missing_fields":[],"snap":{"ticker":"AUTV","company":"Autovale Motors","price":244.59,"sector":"Consumer Cyclical","pe_ttm":15.18,"fwd_pe":12.7,"peg":0.96,"debt_eq":0.66,"current_ratio":1.59,"rsi14":31.8,"sma20_pct":-3.6,"sma50_pct":-5.7,"sma200_pct":-8.4,"perf_week_pct":-0.5,"perf_month_pct":-4.9,"perf_quarter_pct":-13.0,"rel_volume":1.73,"pct_from_52w_high":-41.4,"roic":20.9,"roe":22.6,"profit_margin":14.1}},{"ticker":"CHVL","base_score":54.0,"momentum_score":29.0,"valuation_score":11.0,"quality_score":11.0,"balance_score":3.0,"late_leg_penalty":0.0,"final_score":54.0,"action":"WATCH","notes":"Needs inflection trigger","missing_fields":[],"snap":{"ticker":"CHVL","company":"Chemvale Specialty","price":165.76,"sector":"Basic Materials","pe_ttm":20.34,"fwd_pe":17.5,"peg":2.17,"debt_eq":1.42,"current_ratio":0.95,"rsi14":45.8,"sma20_pct":3.5,"sma50_pct":3.4,"sma200_pct":0.5,"perf_week_pct":0.5,"perf_month_pct":2.5,"perf_quarter_pct":10.4,"rel_volume":0.93,"pct_from_52w_high":-10.9,"roic":9.9,"roe":13.4,"profit_margin":8.9}},{"ticker":"CRDL","base_score":53.0,"momentum_score":20.0,"valuation_score":16.0,"quality_score":9.0,"balance_score":8.0,"late_leg_penalty":0.0,"final_score":53.0,"action":"WATCH","notes":"Needs inflection trigger","missing_fields":[],"snap":{"ticker":"CRDL","company":"Cardiolink Health","price":233.47,"sector":"Healthcare","pe_ttm":32.28,"fwd_pe":24.0,"peg":1.73,"debt_eq":1.37,"current_ratio":1.08,"rsi14":54.7,"sma20_pct":-2.4,"sma50_pct":4.7,"sma200_pct":-2.6,"perf_week_pct":0.5,"perf_month_pct":-1.4,"perf_quarter_pct":7.7,"rel_volume":1.04,"pct_from_52w_high":-14.5,"roic":8.0,"roe":9.2,"profit_margin":12.0}},{"ticker":"DPWL","base_score":51.0,"momentum_score":32.0,"valuation_score":7.0,"quality_score":4.0,"balance_score":8.0,"late_leg_penalty":0.0,"final_score":51.0,"action":"WATCH","notes":"Needs inflection trigger","missing_fields":[],"snap":{"ticker":"DPWL","company":"Deepwell Drilling","price":68.18,"sector":"Energy","pe_ttm":16.75,"fwd_pe":16.3,"peg":2.78,"debt_eq":1.95,"current_ratio":1.2,"rsi14":51.6,"sma20_pct":1.7,"sma50_pct":5.9,"sma200_pct":1.8,"perf_week_pct":0.5,"perf_month_pct":0.2,"perf_quarter_pct":6.3,"rel_volume":1.3,"pct_from_52w_high":-19.8,"roic":4.6,"roe":8.6,"profit_margin":6.9}},{"ticker":"CNVY","base_score":50.0,"momentum_score":13.0,"valuation_score":11.0,"quality_score":14.0,"balance_score":12.0,"late_leg_penalty":0.0,"final_score":50.0,"action":"WATCH","notes":"Needs inflection trigger","missing_fields":[],"snap":{"ticker":"CNVY","company":"Conveyra Systems","price":30.42,"sector":"Industrials","pe_ttm":24.61,"fwd_pe":22.6,"peg":1.96,"debt_eq":0.54,"current_ratio":1.48,"rsi14":46.0,"sma20_pct":-1.3,"sma50_pct":-2.3,"sma200_pct":-2.5,"perf_week_pct":-1.4,"perf_month_pct":-2.9,"perf_quarter_pct":1.3,"rel_volume":1.14,"pct_from_52w_high":-6.1,"roic":14.6,"roe":18.5,"profit_margin":9.4}},{"ticker":"PNTR","base_score":53.0,"momentum_score":29.0,"valuation_score":7.0,"quality_score":9.0,"balance_score":8.0,"late_leg_penalty":3.0,"final_score":50.0,"action":"WATCH","notes":"Needs inflection trigger","missing_fields":[],"snap":{"ticker":"PNTR","company":"Pantryline Foods","price":97.63,"sector":"Consumer Defensive","pe_ttm":23.74,"fwd_pe":17.0,"peg":2.54,"debt_eq":1.56,"current_ratio":1.51,"rsi14":49.0,"sma20_pct":0.1,"sma50_pct":2.5,"sma200_pct":1.4,"perf_week_pct":-0.4,"perf_month_pct":1.5,"perf_quarter_pct":4.7,"rel_volume":0.85,"pct_from_52w_high":-14.5,"roic":11.4,"roe":11.9,"profit_margin":13.1}},{"ticker":"BRGR","base_score":49.0,"momentum_score":20.0,"valuation_score":11.0,"quality_score":10.0,"balance_score":8.0,"late_leg_penalty":0.0,"final_score":49.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":[],"snap":{"ticker":"BRGR","company":"Burgerton Restaurants","price":302.2,"sector":"Consumer Cyclical","pe_ttm":25.57,"fwd_pe":24.4,"peg":2.18,"debt_eq":1.48,"current_ratio":1.2,"rsi14":54.7,"sma20_pct":-0.4,"sma50_pct":4.1,"sma200_pct":-2.0,"perf_week_pct":1.4,"perf_month_pct":3.0,"perf_quarter_pct":4.1,"rel_volume":1.28,"pct_from_52w_high":-16.4,"roic":12.5,"roe":11.3,"profit_margin":6.7}},{"ticker":"TLCT","base_score":49.0,"momentum_score":19.0,"valuation_score":11.0,"quality_score":11.0,"balance_score":8.0,"late_leg_penalty":0.0,"final_score":49.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":[],"snap":{"ticker":"TLCT","company":"Telecomet Wireless","price":19.12,"sector":"Communication Services","pe_ttm":24.17,"fwd_pe":21.5,"peg":2.43,"debt_eq":1.61,"current_ratio":1.25,"rsi14":46.5,"sma20_pct":-0.2,"sma50_pct":-0.4,"sma200_pct":4.1,"perf_week_pct":-0.8,"perf_month_pct":-1.3,"perf_quarter_pct":1.0,"rel_volume":0.73,"pct_from_52w_high":-18.5,"roic":11.7,"roe":13.5,"profit_margin":11.3}},{"ticker":"PNCL","base_score":50.0,"momentum_score":16.0,"valuation_score":11.0,"quality_score":11.0,"balance_score":12.0,"late_leg_penalty":3.0,"final_score":47.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":[],"snap":{"ticker":"PNCL","company":"Pinnacrest Financial","price":211.25,"sector":"Financial Services","pe_ttm":20.99,"fwd_pe":16.2,"peg":1.81,"debt_eq":0.97,"current_ratio":1.79,"rsi14":50.6,"sma20_pct":-2.2,"sma50_pct":-1.2,"sma200_pct":-0.6,"perf_week_pct":-0.2,"perf_month_pct":0.6,"perf_quarter_pct":-3.6,"rel_volume":0.89,"pct_from_52w_high":-5.9,"roic":7.7,"roe":16.3,"profit_margin":10.0}},{"ticker":"ADWV","base_score":50.0,"momentum_score":29.0,"valuation_score":11.0,"quality_score":2.0,"balance_score":8.0,"late_leg_penalty":3.0,"final_score":47.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":[],"snap":{"ticker":"ADWV","company":"Adwave Digital","price":391.02,"sector":"Communication Services","pe_ttm":22.08,"fwd_pe":16.6,"peg":2.01,"debt_eq":1.79,"current_ratio":1.03,"rsi14":49.0,"sma20_pct":1.5,"sma50_pct":1.3,"sma200_pct":0.4,"perf_week_pct":-0.9,"perf_month_pct":5.0,"perf_quarter_pct":9.1,"rel_volume":0.87,"pct_from_52w_high":-16.9,"roic":5.1,"roe":3.3,"profit_margin":1.5}},{"ticker":"BRCH","base_score":49.0,"momentum_score":32.0,"valuation_score":7.0,"quality_score":7.0,"balance_score":3.0,"late_leg_penalty":3.0,"final_score":46.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":["peg"],"snap":{"ticker":"BRCH","company":"Birchwood Care Services","price":72.59,"sector":"Healthcare","pe_ttm":25.63,"fwd_pe":22.0,"peg":null,"debt_eq":1.34,"current_ratio":0.98,"rsi14":52.1,"sma20_pct":1.9,"sma50_pct":3.9,"sma200_pct":0.9,"perf_week_pct":-0.9,"perf_month_pct":6.6,"perf_quarter_pct":1.0,"rel_volume":0.84,"pct_from_52w_high":-11.5,"roic":6.2,"roe":9.1,"profit_margin":1.5}},{"ticker":"TRSL","base_score":46.0,"momentum_score":23.0,"valuation_score":7.0,"quality_score":9.0,"balance_score":7.0,"late_leg_penalty":0.0,"final_score":46.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":[],"snap":{"ticker":"TRSL","company":"Trustleaf Insurance","price":74.08,"sector":"Financial Services","pe_ttm":22.52,"fwd_pe":16.6,"peg":2.93,"debt_eq":0.81,"current_ratio":0.81,"rsi14":47.6,"sma20_pct":-2.7,"sma50_pct":2.8,"sma200_pct":2.6,"perf_week_pct":-1.2,"perf_month_pct":-0.1,"perf_quarter_pct":1.0,"rel_volume":0.94,"pct_from_52w_high":-16.1,"roic":10.2,"roe":9.1,"profit_margin":11.6}},{"ticker":"ANVL","base_score":45.0,"momentum_score":15.0,"valuation_score":7.0,"quality_score":11.0,"balance_score":12.0,"late_leg_penalty":0.0,"final_score":45.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":[],"snap":{"ticker":"ANVL","company":"Anvilmed Devices","price":91.46,"sector":"Healthcare","pe_ttm":17.96,"fwd_pe":17.5,"peg":3.48,"debt_eq":0.93,"current_ratio":1.38,"rsi14":49.5,"sma20_pct":-2.1,"sma50_pct":1.9,"sma200_pct":-4.3,"perf_week_pct":1.0,"perf_month_pct":-3.5,"perf_quarter_pct":0.8,"rel_volume":0.93,"pct_from_52w_high":-13.1,"roic":10.5,"roe":13.8,"profit_margin":9.9}},{"ticker":"CRDT","base_score":45.0,"momentum_score":2.0,"valuation_score":10.0,"quality_score":18.0,"balance_score":15.0,"late_leg_penalty":0.0,"final_score":45.0,"action":"AVOID","notes":"Falling-knife filter triggered","missing_fields":["peg"],"snap":{"ticker":"CRDT","company":"Creditvale Lending","price":608.48,"sector":"Financial Services","pe_ttm":17.12,"fwd_pe":12.5,"peg":null,"debt_eq":0.28,"current_ratio":1.37,"rsi14":35.2,"sma20_pct":-4.8,"sma50_pct":-11.1,"sma200_pct":-11.5,"perf_week_pct":-2.4,"perf_month_pct":-7.9,"perf_quarter_pct":-6.1,"rel_volume":1.36,"pct_from_52w_high":-28.5,"roic":23.9,"roe":30.0,"profit_margin":13.7}},{"ticker":"STWL","base_score":45.0,"momentum_score":15.0,"valuation_score":7.0,"quality_score":11.0,"balance_score":12.0,"late_leg_penalty":0.0,"final_score":45.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":["peg"],"snap":{"ticker":"STWL","company":"Storewell Self-Storage REIT","price":48.02,"sector":"Real Estate","pe_ttm":22.77,"fwd_pe":21.7,"peg":null,"debt_eq":0.94,"current_ratio":1.05,"rsi14":45.5,"sma20_pct":-1.6,"sma50_pct":1.6,"sma200_pct":-4.3,"perf_week_pct":-0.3,"perf_month_pct":-0.2,"perf_quarter_pct":3.6,"rel_volume":0.7,"pct_from_52w_high":-17.9,"roic":8.8,"roe":16.4,"profit_margin":14.7}},{"ticker":"TRNS","base_score":44.0,"momentum_score":21.0,"valuation_score":11.0,"quality_score":4.0,"balance_score":8.0,"late_leg_penalty":0.0,"final_score":44.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":[],"snap":{"ticker":"TRNS","company":"Transvale Logistics","price":161.32,"sector":"Industrials","pe_ttm":24.76,"fwd_pe":18.6,"peg":1.9,"debt_eq":1.12,"current_ratio":1.13,"rsi14":48.6,"sma20_pct":1.7,"sma50_pct":1.0,"sma200_pct":-0.3,"perf_week_pct":2.7,"perf_month_pct":7.3,"perf_quarter_pct":7.8,"rel_volume":1.48,"pct_from_52w_high":-15.0,"roic":5.5,"roe":10.7,"profit_margin":4.3}},{"ticker":"ELGD","base_score":44.0,"momentum_score":19.0,"valuation_score":11.0,"quality_score":11.0,"balance_score":3.0,"late_leg_penalty":0.0,"final_score":44.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":[],"snap":{"ticker":"ELGD","company":"Electra Grid Utilities","price":54.17,"sector":"Utilities","pe_ttm":23.04,"fwd_pe":17.4,"peg":2.42,"debt_eq":1.28,"current_ratio":0.82,"rsi14":49.2,"sma20_pct":0.7,"sma50_pct":2.9,"sma200_pct":-5.4,"perf_week_pct":0.7,"perf_month_pct":-0.7,"perf_quarter_pct":1.8,"rel_volume":0.7,"pct_from_52w_high":-19.7,"roic":8.8,"roe":14.3,"profit_margin":13.8}},{"ticker":"GSLT","base_score":44.0,"momentum_score":25.0,"valuation_score":10.0,"quality_score":9.0,"balance_score":0.0,"late_leg_penalty":0.0,"final_score":44.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":[],"snap":{"ticker":"GSLT","company":"Gaslight Distribution","price":224.08,"sector":"Utilities","pe_ttm":16.81,"fwd_pe":14.8,"peg":2.92,"debt_eq":3.16,"current_ratio":0.61,"rsi14":43.1,"sma20_pct":-0.8,"sma50_pct":2.8,"sma200_pct":1.3,"perf_week_pct":1.8,"perf_month_pct":1.9,"perf_quarter_pct":1.2,"rel_volume":0.88,"pct_from_52w_high":-8.7,"roic":9.1,"roe":8.6,"profit_margin":14.0}},{"ticker":"LXLN","base_score":43.0,"momentum_score":20.0,"valuation_score":11.0,"quality_score":4.0,"balance_score":8.0,"late_leg_penalty":0.0,"final_score":43.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":[],"snap":{"ticker":"LXLN","company":"Luxeline Retail","price":56.15,"sector":"Consumer Cyclical","pe_ttm":24.47,"fwd_pe":19.4,"peg":2.24,"debt_eq":1.33,"current_ratio":1.67,"rsi14":50.5,"sma20_pct":1.3,"sma50_pct":2.3,"sma200_pct":-3.6,"perf_week_pct":0.6,"perf_month_pct":2.0,"perf_quarter_pct":-1.9,"rel_volume":1.26,"pct_from_52w_high":-21.7,"roic":4.1,"roe":7.2,"profit_margin":1.9}},{"ticker":"AQVL","base_score":45.0,"momentum_score":19.0,"valuation_score":7.0,"quality_score":11.0,"balance_score":8.0,"late_leg_penalty":3.0,"final_score":42.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":[],"snap":{"ticker":"AQVL","company":"Aquavale Water","price":66.03,"sector":"Utilities","pe_ttm":19.7,"fwd_pe":19.6,"peg":2.88,"debt_eq":1.34,"current_ratio":1.48,"rsi14":44.5,"sma20_pct":-0.3,"sma50_pct":-1.0,"sma200_pct":2.4,"perf_week_pct":-1.6,"perf_month_pct":0.6,"perf_quarter_pct":4.1,"rel_volume":1.06,"pct_from_52w_high":-10.3,"roic":9.5,"roe":13.3,"profit_margin":14.1}},{"ticker":"HVYL","base_score":41.0,"momentum_score":17.0,"valuation_score":7.0,"quality_score":9.0,"balance_score":8.0,"late_leg_penalty":0.0,"final_score":41.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":[],"snap":{"ticker":"HVYL","company":"Heavyline Equipment","price":38.78,"sector":"Industrials","pe_ttm":29.51,"fwd_pe":21.7,"peg":3.15,"debt_eq":1.17,"current_ratio":1.13,"rsi14":47.7,"sma20_pct":-2.4,"sma50_pct":-2.8,"sma200_pct":1.8,"perf_week_pct":-0.5,"perf_month_pct":-3.1,"perf_quarter_pct":-3.0,"rel_volume":0.94,"pct_from_52w_high":-16.8,"roic":7.6,"roe":10.6,"profit_margin":12.9}},{"ticker":"ORBT","base_score":43.0,"momentum_score":28.0,"valuation_score":3.0,"quality_score":4.0,"balance_score":8.0,"late_leg_penalty":3.0,"final_score":40.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":["peg"],"snap":{"ticker":"ORBT","company":"Orbitrail Networks","price":148.69,"sector":"Technology","pe_ttm":27.82,"fwd_pe":25.7,"peg":null,"debt_eq":1.22,"current_ratio":1.56,"rsi14":51.3,"sma20_pct":1.8,"sma50_pct":-0.8,"sma200_pct":2.8,"perf_week_pct":-0.1,"perf_month_pct":3.7,"perf_quarter_pct":4.2,"rel_volume":1.22,"pct_from_52w_high":-17.1,"roic":2.8,"roe":10.5,"profit_margin":3.2}},{"ticker":"DLYS","base_score":32.0,"momentum_score":11.0,"valuation_score":7.0,"quality_score":11.0,"balance_score":3.0,"late_leg_penalty":0.0,"final_score":32.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":[],"snap":{"ticker":"DLYS","company":"Dairylane Cooperative","price":36.41,"sector":"Consumer Defensive","pe_ttm":22.54,"fwd_pe":17.4,"peg":3.1,"debt_eq":1.72,"current_ratio":0.81,"rsi14":49.7,"sma20_pct":-2.2,"sma50_pct":-0.8,"sma200_pct":-5.4,"perf_week_pct":0.0,"perf_month_pct":0.3,"perf_quarter_pct":-2.0,"rel_volume":0.87,"pct_from_52w_high":-15.5,"roic":7.2,"roe":13.9,"profit_margin":12.3}},{"ticker":"APMK","base_score":24.0,"momentum_score":11.0,"valuation_score":7.0,"quality_score":6.0,"balance_score":0.0,"late_leg_penalty":0.0,"final_score":24.0,"action":"AVOID","notes":"Not aligned this week","missing_fields":["roe"],"snap":{"ticker":"APMK","company":"Aptmark Residential","price":25.41,"sector":"Real Estate","pe_ttm":26.39,"fwd_pe":18.9,"peg":3.64,"debt_eq":2.42,"current_ratio":0.72,"rsi14":45.5,"sma20_pct":-0.5,"sma50_pct":0.0,"sma200_pct":-2.0,"perf_week_pct":1.1,"perf_month_pct":-2.1,"perf_quarter_pct":3.3,"rel_volume":0.71,"pct_from_52w_high":-12.1,"roic":5.4,"roe":null,"profit_margin":17.4}},{"ticker":"GNMX","base_score":15.0,"momentum_score":0.0,"valuation_score":7.0,"quality_score":0.0,"balance_score":8.0,"late_leg_penalty":0.0,"final_score":15.0,"action":"AVOID","notes":"Falling-knife filter triggered","missing_fields":[],"snap":{"ticker":"GNMX","company":"Genomex Therapeutics","price":51.63,"sector":"Healthcare","pe_ttm":27.89,"fwd_pe":20.0,"peg":3.87,"debt_eq":1.83,"current_ratio":1.13,"rsi14":35.9,"sma20_pct":-2.1,"sma50_pct":-16.8,"sma200_pct":-17.9,"perf_week_pct":-3.1,"perf_month_pct":-8.4,"perf_quarter_pct":-14.4,"rel_volume":1.11,"pct_from_52w_high":-59.5,"roic":3.6,"roe":3.3,"profit_margin":-0.4}},{"ticker":"TDMK","base_score":6.0,"momentum_score":0.0,"valuation_score":3.0,"quality_score":0.0,"balance_score":3.0,"late_leg_penalty":0.0,"final_score":6.0,"action":"AVOID","notes":"Falling-knife filter triggered","missing_fields":["peg"],"snap":{"ticker":"TDMK","company":"Tidemark Offshore","price":583.12,"sector":"Energy","pe_ttm":44.35,"fwd_pe":39.3,"peg":null,"debt_eq":1.97,"current_ratio":0.87,"rsi14":34.5,"sma20_pct":-7.6,"sma50_pct":-10.3,"sma200_pct":-21.3,"perf_week_pct":-3.6,"perf_month_pct":-5.1,"perf_quarter_pct":-20.7,"rel_volume":1.78,"pct_from_52w_high":-52.8,"roic":0.8,"roe":-0.2,"profit_margin":-3.9}},{"ticker":"OFLN","base_score":5.0,"momentum_score":0.0,"valuation_score":3.0,"quality_score":2.0,"balance_score":0.0,"late_leg_penalty":0.0,"final_score":5.0,"action":"AVOID","notes":"Falling-knife filter triggered","missing_fields":[],"snap":{"ticker":"OFLN","company":"Officeline Properties","price":45.21,"sector":"Real Estate","pe_ttm":40.72,"fwd_pe":37.8,"peg":3.25,"debt_eq":2.73,"current_ratio":0.78,"rsi14":35.2,"sma20_pct":-8.8,"sma50_pct":-10.4,"sma200_pct":-10.9,"perf_week_pct":-0.2,"perf_month_pct":-4.2,"perf_quarter_pct":-20.3,"rel_volume":1.04,"pct_from_52w_high":-46.5,"roic":-1.6,"roe":5.5,"profit_margin":3.1}}]},"residual_momentum":{"generated_at":"2026-10-12T14:00:00+00:00","ff3_data_through":"202608","count":60,"rows":[{"ticker":"MRKT","score":0.6176,"alpha_monthly":0.00103,"beta_mkt":1.3552,"beta_smb":-0.7688,"beta_hml":-0.4899,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"NVLK","score":0.5887,"alpha_monthly":0.00918,"beta_mkt":1.495,"beta_smb":-0.0155,"beta_hml":-0.4783,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"HLNX","score":0.538,"alpha_monthly":-0.00568,"beta_mkt":1.6244,"beta_smb":-0.0565,"beta_hml":-1.4483,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"PNCL","score":0.5278,"alpha_monthly":-0.00132,"beta_mkt":1.0147,"beta_smb":0.9266,"beta_hml":-0.7502,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"CHVL","score":0.5212,"alpha_monthly":-0.00252,"beta_mkt":0.8962,"beta_smb":-0.4995,"beta_hml":0.5759,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"VRTB","score":0.4917,"alpha_monthly":-0.00871,"beta_mkt":1.7816,"beta_smb":-1.2,"beta_hml":-1.0773,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"SCNS","score":0.483,"alpha_monthly":-0.00542,"beta_mkt":1.045,"beta_smb":-0.1089,"beta_hml":0.053,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"WNDR","score":0.474,"alpha_monthly":0.00367,"beta_mkt":1.7944,"beta_smb":-0.8518,"beta_hml":0.1214,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"STMK","score":0.4546,"alpha_monthly":0.014,"beta_mkt":0.8346,"beta_smb":-0.435,"beta_hml":-0.2364,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"QRTZ","score":0.3901,"alpha_monthly":-0.0061,"beta_mkt":0.8115,"beta_smb":-0.7117,"beta_hml":-0.1177,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"TLCT","score":0.3597,"alpha_monthly":-0.0199,"beta_mkt":0.355,"beta_smb":-0.307,"beta_hml":0.9283,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"ELGD","score":0.3072,"alpha_monthly":0.0023,"beta_mkt":0.5858,"beta_smb":0.0115,"beta_hml":0.6746,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"CRDL","score":0.297,"alpha_monthly":-0.00105,"beta_mkt":1.2674,"beta_smb":0.0456,"beta_hml":-0.241,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"RDGL","score":0.2858,"alpha_monthly":0.01031,"beta_mkt":1.0913,"beta_smb":-0.5485,"beta_hml":-0.6376,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"DLYS","score":0.2743,"alpha_monthly":-0.00385,"beta_mkt":0.3624,"beta_smb":-0.3539,"beta_hml":-0.5826,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"LDGR","score":0.2726,"alpha_monthly":0.00658,"beta_mkt":0.7365,"beta_smb":-0.1422,"beta_hml":-0.6964,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"CPFD","score":0.2589,"alpha_monthly":0.0091,"beta_mkt":1.5612,"beta_smb":-0.4643,"beta_hml":-0.8321,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"STWL","score":0.2526,"alpha_monthly":-0.00361,"beta_mkt":0.4636,"beta_smb":-0.7518,"beta_hml":0.7734,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"SLRK","score":0.237,"alpha_monthly":0.01895,"beta_mkt":2.0204,"beta_smb":-0.6999,"beta_hml":-0.1142,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"GRDN","score":0.2141,"alpha_monthly":-0.00621,"beta_mkt":1.2291,"beta_smb":0.9689,"beta_hml":-1.5973,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"VYGR","score":0.1806,"alpha_monthly":0.00999,"beta_mkt":1.4008,"beta_smb":0.4137,"beta_hml":-0.1909,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"SLVR","score":0.1694,"alpha_monthly":0.00469,"beta_mkt":1.0903,"beta_smb":0.8228,"beta_hml":0.8334,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"APMK","score":0.1542,"alpha_monthly":-0.01066,"beta_mkt":0.7961,"beta_smb":0.0341,"beta_hml":1.3489,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"ORBT","score":0.1377,"alpha_monthly":-0.00212,"beta_mkt":1.1314,"beta_smb":0.2264,"beta_hml":-0.3437,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"RVTX","score":0.136,"alpha_monthly":0.00785,"beta_mkt":0.8553,"beta_smb":-0.3139,"beta_hml":1.0457,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"BRCH","score":0.1187,"alpha_monthly":0.00517,"beta_mkt":1.0839,"beta_smb":-0.4634,"beta_hml":0.1275,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"CLDF","score":0.1001,"alpha_monthly":0.00326,"beta_mkt":0.7551,"beta_smb":-1.2,"beta_hml":0.4631,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"AQVL","score":0.0904,"alpha_monthly":0.00011,"beta_mkt":0.3709,"beta_smb":-0.4765,"beta_hml":-0.1102,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"HVYL","score":0.0828,"alpha_monthly":-0.00038,"beta_mkt":0.4884,"beta_smb":0.2585,"beta_hml":1.328,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"DTRV","score":0.0675,"alpha_monthly":0.0112,"beta_mkt":0.7996,"beta_smb":-0.129,"beta_hml":-1.3926,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"CLRX","score":0.0513,"alpha_monthly":-0.00439,"beta_mkt":0.7465,"beta_smb":-0.7494,"beta_hml":0.8793,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"LGCR","score":0.0414,"alpha_monthly":-0.00362,"beta_mkt":0.8401,"beta_smb":0.5159,"beta_hml":-1.8262,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"HRBR","score":0.0057,"alpha_monthly":0.01811,"beta_mkt":0.7827,"beta_smb":-0.1902,"beta_hml":0.5139,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"HYGX","score":0.0042,"alpha_monthly":-0.00896,"beta_mkt":0.7677,"beta_smb":0.838,"beta_hml":-1.335,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"WNGP","score":-0.0048,"alpha_monthly":0.01488,"beta_mkt":0.4983,"beta_smb":-0.5928,"beta_hml":0.8304,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"TDMK","score":-0.0409,"alpha_monthly":0.00146,"beta_mkt":1.4979,"beta_smb":-0.1359,"beta_hml":0.6145,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"PNTR","score":-0.0437,"alpha_monthly":0.02658,"beta_mkt":0.6984,"beta_smb":-0.5966,"beta_hml":0.6694,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"BRGR","score":-0.0734,"alpha_monthly":0.02466,"beta_mkt":1.1742,"beta_smb":0.328,"beta_hml":-0.3987,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"GRCR","score":-0.1369,"alpha_monthly":0.00534,"beta_mkt":1.2653,"beta_smb":-0.3551,"beta_hml":0.4329,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"LXLN","score":-0.1382,"alpha_monthly":0.0034,"beta_mkt":1.1977,"beta_smb":-0.5896,"beta_hml":1.0658,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"SNKR","score":-0.1743,"alpha_monthly":0.01678,"beta_mkt":1.5192,"beta_smb":0.52,"beta_hml":0.0733,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"BYTW","score":-0.188,"alpha_monthly":0.01821,"beta_mkt":0.9377,"beta_smb":-0.5475,"beta_hml":0.7976,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"GNMX","score":-0.2599,"alpha_monthly":0.00227,"beta_mkt":1.6991,"beta_smb":-0.2441,"beta_hml":0.4283,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"DPWL","score":-0.2791,"alpha_monthly":0.01244,"beta_mkt":1.0875,"beta_smb":0.5406,"beta_hml":-0.2595,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"PLSE","score":-0.2859,"alpha_monthly":-0.00213,"beta_mkt":1.2118,"beta_smb":-0.2131,"beta_hml":-0.8436,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"AUTV","score":-0.2924,"alpha_monthly":0.02816,"beta_mkt":1.0997,"beta_smb":0.5042,"beta_hml":-0.1307,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"UNMR","score":-0.3279,"alpha_monthly":-0.0008,"beta_mkt":1.9839,"beta_smb":0.2341,"beta_hml":-1.5132,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"CNVY","score":-0.3388,"alpha_monthly":0.01627,"beta_mkt":0.7419,"beta_smb":0.1511,"beta_hml":-0.0964,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"GSLT","score":-0.3413,"alpha_monthly":-0.005,"beta_mkt":0.2163,"beta_smb":-0.6441,"beta_hml":0.7695,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"TRNS","score":-0.3472,"alpha_monthly":0.01865,"beta_mkt":1.1021,"beta_smb":0.1088,"beta_hml":-0.4359,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"ANVL","score":-0.3484,"alpha_monthly":0.00306,"beta_mkt":0.3189,"beta_smb":-0.7533,"beta_hml":0.3505,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"NRTH","score":-0.3668,"alpha_monthly":0.00485,"beta_mkt":0.7379,"beta_smb":-0.3172,"beta_hml":0.9405,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"BVRG","score":-0.3683,"alpha_monthly":0.00824,"beta_mkt":1.1921,"beta_smb":-0.3787,"beta_hml":0.9035,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"TRSL","score":-0.3883,"alpha_monthly":0.0106,"beta_mkt":0.7019,"beta_smb":-0.8456,"beta_hml":1.3163,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"CRDT","score":-0.4061,"alpha_monthly":-0.0055,"beta_mkt":1.3462,"beta_smb":0.0971,"beta_hml":-0.5514,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"LMNR","score":-0.4128,"alpha_monthly":0.01842,"beta_mkt":0.7618,"beta_smb":0.2659,"beta_hml":-0.5756,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"FRGE","score":-0.4597,"alpha_monthly":0.01672,"beta_mkt":0.9376,"beta_smb":-1.2,"beta_hml":0.4275,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"HMST","score":-0.4847,"alpha_monthly":0.03083,"beta_mkt":1.2577,"beta_smb":-0.8792,"beta_hml":0.5342,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"PXLR","score":-0.5303,"alpha_monthly":-0.00045,"beta_mkt":1.5055,"beta_smb":0.1371,"beta_hml":-0.4463,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36},{"ticker":"OFLN","score":-1.1,"alpha_monthly":-0.00164,"beta_mkt":1.2461,"beta_smb":-0.0197,"beta_hml":-0.7419,"estimation_window":["202309","202608"],"formation_window":["202508","202607"],"n_months":36}]},"portfolio":{"authenticated":true,"positions":[{"account_last4":"0002","account_type":"MARGIN","symbol":"NVLK","description":"NOVALINK SYSTEMS","asset_type":"EQUITY","quantity":120,"average_price":352.5,"current_price":556.95,"market_value":66834.0,"unrealized_gl":24534.0,"unrealized_gl_pct":58.0,"final_score":75.5,"action":"BUY","late_leg_penalty":4.5,"sector":"Technology","flag":{"kind":"profit_take","reason":"Up 58% (LateLegPenalty 4.5/10) -- check your profit-taking rule"}},{"account_last4":"0002","account_type":"MARGIN","symbol":"PXLR","description":"PIXELROW INTERACTIVE","asset_type":"EQUITY","quantity":75,"average_price":249.28,"current_price":316.58,"market_value":23743.5,"unrealized_gl":5047.5,"unrealized_gl_pct":27.0,"final_score":56.0,"action":"WATCH","late_leg_penalty":10.0,"sector":"Technology","flag":{"kind":"profit_take","reason":"Up 27% (LateLegPenalty 10.0/10) -- check your profit-taking rule"}},{"account_last4":"0002","account_type":"MARGIN","symbol":"QRTZ","description":"QUARTZLINE SOFTWARE","asset_type":"EQUITY","quantity":85,"average_price":27.02,"current_price":33.5,"market_value":2847.5,"unrealized_gl":550.8,"unrealized_gl_pct":23.98,"final_score":73.0,"action":"BUY","late_leg_penalty":2.0,"sector":"Technology","flag":null},{"account_last4":"0002","account_type":"MARGIN","symbol":"GNMX","description":"GENOMEX THERAPEUTICS","asset_type":"EQUITY","quantity":200,"average_price":67.93,"current_price":51.63,"market_value":10326.0,"unrealized_gl":-3260.0,"unrealized_gl_pct":-24.0,"final_score":15.0,"action":"AVOID","late_leg_penalty":0.0,"sector":"Healthcare","flag":{"kind":"loss_cut","reason":"Falling-knife filter triggered"}},{"account_last4":"0001","account_type":"CASH","symbol":"HRBR","description":"HARBORLINE BANCORP","asset_type":"EQUITY","quantity":140,"average_price":343.06,"current_price":284.74,"market_value":39863.6,"unrealized_gl":-8164.8,"unrealized_gl_pct":-17.0,"final_score":77.0,"action":"BUY","late_leg_penalty":0.0,"sector":"Financial Services","flag":{"kind":"loss_cut","reason":"Down 17% -- check your loss-cutting rule"}},{"account_last4":"0001","account_type":"CASH","symbol":"CNVY","description":"CONVEYRA SYSTEMS","asset_type":"EQUITY","quantity":55,"average_price":28.43,"current_price":30.42,"market_value":1673.1,"unrealized_gl":109.45,"unrealized_gl_pct":7.0,"final_score":50.0,"action":"WATCH","late_leg_penalty":0.0,"sector":"Industrials","flag":null},{"account_last4":"0001","account_type":"CASH","symbol":"PNTR","description":"PANTRYLINE FOODS","asset_type":"EQUITY","quantity":90,"average_price":101.7,"current_price":97.63,"market_value":8786.7,"unrealized_gl":-366.3,"unrealized_gl_pct":-4.0,"final_score":50.0,"action":"WATCH","late_leg_penalty":3.0,"sector":"Consumer Defensive","flag":null},{"account_last4":"0001","account_type":"CASH","symbol":"DMOT","description":"Demo Total Market Index ETF","asset_type":"COLLECTIVE_INVESTMENT","quantity":40,"average_price":23.91,"current_price":38.5,"market_value":1540.0,"unrealized_gl":583.6,"unrealized_gl_pct":61.02,"flag":null},{"account_last4":"0001","account_type":"CASH","symbol":"DMDG","description":"Demo Dividend Growth ETF","asset_type":"COLLECTIVE_INVESTMENT","quantity":40,"average_price":40.94,"current_price":52.0,"market_value":2080.0,"unrealized_gl":442.4,"unrealized_gl_pct":27.02,"flag":null},{"account_last4":"0002","account_type":"MARGIN","symbol":"DMOB","description":"Demo Short-Term Treasury ETF","asset_type":"COLLECTIVE_INVESTMENT","quantity":40,"average_price":137.93,"current_price":140.0,"market_value":5600.0,"unrealized_gl":82.8,"unrealized_gl_pct":1.5,"flag":null}]}}</script>
+<!-- DEMO-DATA-END -->
+
+<script>
+const ACTION_ORDER = ["BUY/ADD", "BUY", "WATCH", "AVOID"];
+const ACTION_COLOR = { "BUY/ADD": "var(--green)", "BUY": "var(--accent)", "WATCH": "var(--yellow)", "AVOID": "var(--red)" };
+
+function readEmbedded(id) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  try { return JSON.parse(el.textContent); } catch (e) { return null; }
+}
+
+const EMBEDDED = readEmbedded("scorecard-data");
+const DEMO = EMBEDDED ? null : readEmbedded("demo-data");
+let DEMO_MODE = !EMBEDDED && !!DEMO;   // true only while showing the fictional sample data
+
+let DATA = EMBEDDED || (DEMO && DEMO.scorecard) || { generated_at: null, count: 0, rows: [] };
+let RM_DATA = readEmbedded("residual-momentum-data") || (DEMO && DEMO.residual_momentum)
+  || { generated_at: null, ff3_data_through: null, count: 0, rows: [] };
+let rows = [];
+let rmByTicker = new Map();
+
+function mapRow(r) {
+  const rm = rmByTicker.get(r.ticker);
+  return {
+    ticker: r.ticker,
+    company: r.snap.company || "",
+    sector: r.snap.sector || "",
+    price: r.snap.price,
+    base_score: r.base_score,
+    momentum_score: r.momentum_score,
+    valuation_score: r.valuation_score,
+    quality_score: r.quality_score,
+    balance_score: r.balance_score,
+    late_leg_penalty: r.late_leg_penalty,
+    final_score: r.final_score,
+    action: r.action,
+    notes: r.notes,
+    missing_fields: r.missing_fields || [],
+    residual_momentum: rm || null,
+    residual_momentum_score: rm ? rm.score : null,
+    snap: r.snap,
+  };
+}
+
+function loadResidualMomentum(payload) {
+  RM_DATA = payload;
+  rmByTicker = new Map((payload.rows || []).map(r => [r.ticker, r]));
+}
+
+const sectorSelect = document.getElementById("sector");
+
+// Sector-relative ranking, applied only to the fundamentals buckets
+// (Valuation/Quality/Balance). Deliberately excludes Momentum: naively
+// sector-adjusting price-momentum-type signals is exactly what Moskowitz &
+// Grinblatt (1999) tested and found "significantly weaker, and for the
+// most part, statistically insignificant" -- unlike P/E-style multiples,
+// which vary by sector for structural reasons (capital intensity, business
+// model), not because momentum itself is sector-relative. See
+// research/garp-momentum-literature-review.html §6.
+function meanStd(values) {
+  if (values.length === 0) return { mean: null, std: null };
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const variance = values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length;
+  return { mean, std: Math.sqrt(variance) };
+}
+
+function zScore(value, stat) {
+  if (value == null || stat.mean == null) return null;
+  if (stat.std === 0) return 0;
+  return (value - stat.mean) / stat.std;
+}
+
+function percentileRank(list, key, outKey) {
+  const withVal = list.filter(r => r[key] != null);
+  const sorted = [...withVal].sort((a, b) => b[key] - a[key]);
+  sorted.forEach((r, i) => {
+    r[outKey] = withVal.length > 1 ? Math.round((1 - i / (withVal.length - 1)) * 100) : 100;
+  });
+  list.forEach(r => { if (r[outKey] === undefined) r[outKey] = null; });
+}
+
+function computeSectorRelative() {
+  const bySector = new Map();
+  for (const r of rows) {
+    if (!r.sector) continue;
+    if (!bySector.has(r.sector)) bySector.set(r.sector, []);
+    bySector.get(r.sector).push(r);
+  }
+
+  const FIELDS = ["fwd_pe", "peg", "debt_eq", "current_ratio", "roic", "roe", "profit_margin"];
+
+  for (const [, list] of bySector) {
+    const stats = {};
+    for (const f of FIELDS) stats[f] = meanStd(list.map(r => r.snap[f]).filter(v => v != null));
+
+    for (const r of list) {
+      const s = r.snap;
+      const zFwdPe = zScore(s.fwd_pe, stats.fwd_pe);
+      const zPeg = zScore(s.peg, stats.peg);
+      const zDebt = zScore(s.debt_eq, stats.debt_eq);
+      const zCurrent = zScore(s.current_ratio, stats.current_ratio);
+      const zRoic = zScore(s.roic, stats.roic);
+      const zRoe = zScore(s.roe, stats.roe);
+      const zMargin = zScore(s.profit_margin, stats.profit_margin);
+
+      const goodVal = [zFwdPe != null ? -zFwdPe : null, zPeg != null ? -zPeg : null].filter(v => v != null);
+      const goodQual = [zRoic, zRoe, zMargin].filter(v => v != null);
+      const goodBal = [zDebt != null ? -zDebt : null, zCurrent].filter(v => v != null);
+
+      r._goodVal = goodVal.length ? goodVal.reduce((a, b) => a + b, 0) / goodVal.length : null;
+      r._goodQual = goodQual.length ? goodQual.reduce((a, b) => a + b, 0) / goodQual.length : null;
+      r._goodBal = goodBal.length ? goodBal.reduce((a, b) => a + b, 0) / goodBal.length : null;
+    }
+
+    const sortedFinal = [...list].sort((a, b) => b.final_score - a.final_score);
+    sortedFinal.forEach((r, i) => { r.sectorRank = i + 1; r.sectorSize = list.length; });
+
+    percentileRank(list, "_goodVal", "valSectorPctile");
+    percentileRank(list, "_goodQual", "qualSectorPctile");
+    percentileRank(list, "_goodBal", "balSectorPctile");
+  }
+}
+
+function ordinal(n) {
+  const s = ["th", "st", "nd", "rd"], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+function loadData(payload, { demo = false } = {}) {
+  DATA = payload;
+  DEMO_MODE = demo;   // a live refresh replaces the sample data and drops demo mode
+  rows = DATA.rows.map(mapRow);
+  computeSectorRelative();
+
+  document.getElementById("meta").textContent = DEMO_MODE
+    ? `DEMO · ${rows.length} fictional companies`
+    : `${rows.length} scored · generated ${new Date(DATA.generated_at).toLocaleString()}`;
+  document.getElementById("demoBanner").hidden = !DEMO_MODE;
+  document.getElementById("universeLabel").textContent = DEMO_MODE ? "(fictional demo)" : "S&P 500";
+  document.title = DEMO_MODE ? "GARP + Momentum Scorecard (DEMO)" : "GARP + Momentum Scorecard";
+
+  const current = sectorSelect.value;
+  sectorSelect.innerHTML = '<option value="">All</option>';
+  [...new Set(rows.map(r => r.sector).filter(Boolean))].sort().forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s; opt.textContent = s;
+    sectorSelect.appendChild(opt);
+  });
+  sectorSelect.value = current;
+
+  render();
+  renderSectors();
+}
+
+let sortKey = "final_score";
+let sortDir = -1;
+let expandedTicker = null;
+
+const searchEl = document.getElementById("search");
+const actionEl = document.getElementById("action");
+const tbody = document.getElementById("rows");
+const emptyEl = document.getElementById("empty");
+const countEl = document.getElementById("count");
+
+function fmtNum(x, digits = 1) {
+  return (x === null || x === undefined || Number.isNaN(x)) ? "—" : Number(x).toFixed(digits);
+}
+
+function actionClass(a) {
+  return "action-" + a.replace("/", "_");
+}
+
+function bucketColor(frac) {
+  if (frac >= 0.75) return "var(--green)";
+  if (frac >= 0.5) return "var(--accent)";
+  if (frac >= 0.25) return "var(--yellow)";
+  return "var(--red)";
+}
+
+function penaltyColor(val) {
+  if (val <= 0) return "var(--muted)";
+  if (val <= 3) return "var(--text)";
+  if (val <= 6) return "var(--yellow)";
+  return "var(--red)";
+}
+
+function residualMomentumColor(score) {
+  if (score == null) return "var(--muted)";
+  if (score >= 0.5) return "var(--green)";
+  if (score >= 0) return "var(--accent)";
+  if (score >= -0.5) return "var(--yellow)";
+  return "var(--red)";
+}
+
+function render() {
+  const q = searchEl.value.trim().toLowerCase();
+  const sector = sectorSelect.value;
+  const action = actionEl.value;
+
+  let filtered = rows.filter(r => {
+    if (sector && r.sector !== sector) return false;
+    if (action && r.action !== action) return false;
+    if (q && !(r.ticker.toLowerCase().includes(q) || r.company.toLowerCase().includes(q))) return false;
+    return true;
+  });
+
+  filtered.sort((a, b) => {
+    let av = a[sortKey], bv = b[sortKey];
+    if (typeof av === "string") { av = av.toLowerCase(); bv = (bv || "").toLowerCase(); }
+    if (av === null || av === undefined) av = -Infinity;
+    if (bv === null || bv === undefined) bv = -Infinity;
+    if (av < bv) return -1 * sortDir;
+    if (av > bv) return 1 * sortDir;
+    return 0;
+  });
+
+  countEl.textContent = `${filtered.length} shown`;
+  tbody.innerHTML = "";
+  emptyEl.style.display = filtered.length ? "none" : "block";
+
+  for (const r of filtered) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="ticker">${r.ticker}</td>
+      <td class="company" title="${r.company}">${r.company}</td>
+      <td>${r.sector}</td>
+      <td class="num component" style="color:${bucketColor((r.sectorSize - r.sectorRank) / Math.max(1, r.sectorSize - 1))}">#${r.sectorRank}/${r.sectorSize}</td>
+      <td class="num">${r.price != null ? "$" + fmtNum(r.price, 2) : "—"}</td>
+      <td class="num component" style="color:${bucketColor(r.momentum_score / 40)}">${fmtNum(r.momentum_score)}</td>
+      <td class="num component" style="color:${bucketColor(r.valuation_score / 25)}">${fmtNum(r.valuation_score)}</td>
+      <td class="num component" style="color:${bucketColor(r.quality_score / 20)}">${fmtNum(r.quality_score)}</td>
+      <td class="num component" style="color:${bucketColor(r.balance_score / 15)}">${fmtNum(r.balance_score)}</td>
+      <td class="num component" style="color:${penaltyColor(r.late_leg_penalty)}">${r.late_leg_penalty > 0 ? "−" : ""}${fmtNum(r.late_leg_penalty)}</td>
+      <td class="num component" style="color:${residualMomentumColor(r.residual_momentum_score)}">${r.residual_momentum_score != null ? fmtNum(r.residual_momentum_score, 2) : "—"}</td>
+      <td class="num">${fmtNum(r.final_score)}</td>
+      <td><span class="action-pill ${actionClass(r.action)}">${r.action}</span></td>
+    `;
+    tr.addEventListener("click", () => {
+      expandedTicker = expandedTicker === r.ticker ? null : r.ticker;
+      render();
+    });
+    tbody.appendChild(tr);
+
+    if (expandedTicker === r.ticker) {
+      const detail = document.createElement("tr");
+      detail.className = "detail-row";
+      const missing = new Set(r.missing_fields);
+      const BUCKET_FIELDS = {
+        "Momentum / Trend": ["sma200_pct", "sma50_pct", "sma20_pct", "rsi14", "pct_from_52w_high", "perf_month_pct", "perf_quarter_pct", "relative_strength"],
+        "Valuation": ["fwd_pe", "peg"],
+        "Quality": ["roic", "roe", "profit_margin"],
+        "Balance Sheet": ["debt_eq", "current_ratio"],
+      };
+      const bucketMissingCount = (label) => (BUCKET_FIELDS[label] || []).filter(f => missing.has(f)).length;
+
+      const buckets = [
+        ["Momentum / Trend", r.momentum_score, 40],
+        ["Valuation", r.valuation_score, 25],
+        ["Quality", r.quality_score, 20],
+        ["Balance Sheet", r.balance_score, 15],
+        ["Late-Leg Penalty", r.late_leg_penalty, 10],
+      ];
+      const bucketHtml = buckets.map(([label, val, max]) => {
+        const frac = max ? val / max : 0;
+        const missCount = bucketMissingCount(label);
+        const estBadge = missCount > 0
+          ? `<span class="est-badge" title="${missCount} input${missCount > 1 ? 's' : ''} missing from Finviz -- scored 0 on those line items, not assumed">~ est.</span>`
+          : "";
+        return `
+          <div class="bucket">
+            <div class="bucket-label">${label}${estBadge}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, frac*100)}%;background:${label==="Late-Leg Penalty" ? "var(--red)" : bucketColor(frac)}"></div></div>
+            <div class="bucket-value">${fmtNum(val)} / ${max}</div>
+          </div>`;
+      }).join("");
+
+      const s = r.snap;
+      const rawStat = (label, val, field, digits = 1, suffix = "") => {
+        const isMissing = missing.has(field);
+        const shown = val != null ? fmtNum(val, digits) + suffix : "—";
+        return `<div class="${isMissing ? 'stat-missing' : ''}"><span>${label}</span>${shown}</div>`;
+      };
+      const rawStats = [
+        rawStat("RSI(14)", s.rsi14, "rsi14"),
+        rawStat("Rel Volume", s.rel_volume, "rel_volume", 2),
+        rawStat("52W High", s.pct_from_52w_high, "pct_from_52w_high", 1, "%"),
+        rawStat("Perf Week", s.perf_week_pct, "perf_week_pct", 1, "%"),
+        rawStat("Perf Month", s.perf_month_pct, "perf_month_pct", 1, "%"),
+        rawStat("Perf Quarter", s.perf_quarter_pct, "perf_quarter_pct", 1, "%"),
+        rawStat("SMA20", s.sma20_pct, "sma20_pct", 1, "%"),
+        rawStat("SMA50", s.sma50_pct, "sma50_pct", 1, "%"),
+        rawStat("SMA200", s.sma200_pct, "sma200_pct", 1, "%"),
+        rawStat("P/E (TTM)", s.pe_ttm, "pe_ttm", 2),
+        rawStat("Forward P/E", s.fwd_pe, "fwd_pe", 2),
+        rawStat("PEG", s.peg, "peg", 2),
+        rawStat("ROIC", s.roic, "roic", 1, "%"),
+        rawStat("ROE", s.roe, "roe", 1, "%"),
+        rawStat("Profit Margin", s.profit_margin, "profit_margin", 1, "%"),
+        rawStat("Debt/Eq", s.debt_eq, "debt_eq", 2),
+        rawStat("Current Ratio", s.current_ratio, "current_ratio", 2),
+      ].join("");
+
+      const pctileHtml = (label, pctile) => `
+        <div class="bucket">
+          <div class="bucket-label">${label}</div>
+          <div class="pctile-value" style="color:${pctile != null ? bucketColor(pctile / 100) : 'var(--muted)'}">${pctile != null ? ordinal(pctile) + " pctile" : "—"}</div>
+        </div>`;
+
+      const rm = r.residual_momentum;
+      const rmHtml = rm ? `
+        <div class="sector-rel-grid">
+          <div class="bucket"><div class="bucket-label">Score</div><div class="pctile-value" style="color:${residualMomentumColor(rm.score)}">${fmtNum(rm.score, 2)}</div></div>
+          <div class="bucket"><div class="bucket-label">Mkt Beta</div><div class="pctile-value">${fmtNum(rm.beta_mkt, 2)}</div></div>
+          <div class="bucket"><div class="bucket-label">SMB Beta</div><div class="pctile-value">${fmtNum(rm.beta_smb, 2)}</div></div>
+          <div class="bucket"><div class="bucket-label">HML Beta</div><div class="pctile-value">${fmtNum(rm.beta_hml, 2)}</div></div>
+        </div>
+        <p class="sector-rel-note">Formation window ${rm.formation_window[0]}&ndash;${rm.formation_window[1]} (12 months, most recent month skipped); betas estimated over ${rm.estimation_window[0]}&ndash;${rm.estimation_window[1]} (36mo). Score = mean/stdev of that window's regression residuals -- how far the stock ran above or below what its own market/size/value exposure would predict, not raw price momentum. Separate from and not counted in FinalScore above (Blitz, Huij &amp; Martens, 2011).</p>
+      ` : `<p class="sector-rel-note">No residual momentum score -- needs 36+ months of overlapping Schwab price history and Fama-French factor data.</p>`;
+
+      detail.innerHTML = `<td colspan="13">
+        <div style="color:var(--muted);font-size:12px;margin-bottom:10px">
+          BaseScore ${fmtNum(r.base_score)} − LateLegPenalty ${fmtNum(r.late_leg_penalty)} = FinalScore ${fmtNum(r.final_score)} · ${r.notes} · <b style="color:var(--text)">#${r.sectorRank} of ${r.sectorSize} in ${r.sector}</b>
+        </div>
+        <div class="detail-grid">${bucketHtml}</div>
+        <div class="raw-stats">${rawStats}</div>
+        <div class="sector-rel">
+          <div class="bucket-label">SECTOR-RELATIVE (vs ${r.sectorSize} ${r.sector} peers, z-scored)</div>
+          <div class="sector-rel-grid">
+            ${pctileHtml("Valuation", r.valSectorPctile)}
+            ${pctileHtml("Quality", r.qualSectorPctile)}
+            ${pctileHtml("Balance", r.balSectorPctile)}
+          </div>
+          <p class="sector-rel-note">Normalizes Valuation/Quality/Balance against ${r.sector} peers instead of the fixed global bands above -- a stock's PEG or ROIC is judged against its own sector's typical range, not the whole S&amp;P 500. Momentum is deliberately left out of this comparison: unlike valuation multiples, which vary by sector for structural reasons (capital intensity, business model), naively sector-adjusting price momentum is exactly what Moskowitz &amp; Grinblatt (1999) tested and found "significantly weaker, and for the most part, statistically insignificant" as a standalone signal.</p>
+        </div>
+        <div class="sector-rel">
+          <div class="bucket-label">RESIDUAL MOMENTUM</div>
+          ${rmHtml}
+        </div>
+      </td>`;
+      tbody.appendChild(detail);
+    }
+  }
+}
+
+document.querySelectorAll("#scorecardView thead th").forEach(th => {
+  th.addEventListener("click", () => {
+    const key = th.dataset.key;
+    if (sortKey === key) { sortDir *= -1; } else { sortKey = key; sortDir = ["ticker", "company", "sector", "action", "sectorRank"].includes(key) ? 1 : -1; }
+    document.querySelectorAll("#scorecardView thead th").forEach(t => t.classList.remove("sorted"));
+    th.classList.add("sorted");
+    render();
+  });
+});
+
+searchEl.addEventListener("input", render);
+sectorSelect.addEventListener("change", render);
+actionEl.addEventListener("change", render);
+
+// -------------- Sectors tab --------------
+
+function computeSectorRollup() {
+  const bySector = new Map();
+  for (const r of rows) {
+    if (!r.sector) continue;
+    if (!bySector.has(r.sector)) bySector.set(r.sector, []);
+    bySector.get(r.sector).push(r);
+  }
+
+  const avg = (arr, key) => arr.reduce((sum, r) => sum + r[key], 0) / arr.length;
+
+  return [...bySector.entries()].map(([sector, list]) => {
+    const counts = { "BUY/ADD": 0, "BUY": 0, "WATCH": 0, "AVOID": 0 };
+    list.forEach(r => { counts[r.action] = (counts[r.action] || 0) + 1; });
+    const buyPct = ((counts["BUY/ADD"] + counts["BUY"]) / list.length) * 100;
+    return {
+      sector,
+      count: list.length,
+      momentum: avg(list, "momentum_score"),
+      valuation: avg(list, "valuation_score"),
+      quality: avg(list, "quality_score"),
+      balance: avg(list, "balance_score"),
+      penalty: avg(list, "late_leg_penalty"),
+      final: avg(list, "final_score"),
+      counts,
+      buyPct,
+    };
+  });
+}
+
+let sectorSortKey = "final";
+let sectorSortDir = -1;
+const sectorTbody = document.getElementById("sectorRows");
+
+function renderSectors() {
+  const data = computeSectorRollup();
+  data.sort((a, b) => {
+    let av = a[sectorSortKey], bv = b[sectorSortKey];
+    if (typeof av === "string") { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+    if (av < bv) return -1 * sectorSortDir;
+    if (av > bv) return 1 * sectorSortDir;
+    return 0;
+  });
+
+  sectorTbody.innerHTML = "";
+  for (const s of data) {
+    const tr = document.createElement("tr");
+    const segs = ACTION_ORDER.map(a => {
+      const pct = (s.counts[a] / s.count) * 100;
+      return pct > 0 ? `<div class="breadth-seg" style="width:${pct}%;background:${ACTION_COLOR[a]}" title="${a}: ${s.counts[a]}"></div>` : "";
+    }).join("");
+    tr.innerHTML = `
+      <td class="sector-name">${s.sector}</td>
+      <td class="num">${s.count}</td>
+      <td class="num component" style="color:${bucketColor(s.momentum / 40)}">${fmtNum(s.momentum)}</td>
+      <td class="num component" style="color:${bucketColor(s.valuation / 25)}">${fmtNum(s.valuation)}</td>
+      <td class="num component" style="color:${bucketColor(s.quality / 20)}">${fmtNum(s.quality)}</td>
+      <td class="num component" style="color:${bucketColor(s.balance / 15)}">${fmtNum(s.balance)}</td>
+      <td class="num component" style="color:${penaltyColor(s.penalty)}">${s.penalty > 0 ? "−" : ""}${fmtNum(s.penalty)}</td>
+      <td class="num">${fmtNum(s.final)}</td>
+      <td class="breadth-cell">
+        <div class="breadth-bar">${segs}</div>
+        <div class="breadth-label">${fmtNum(s.buyPct, 0)}% BUY+</div>
+      </td>
+    `;
+    tr.querySelector(".sector-name").addEventListener("click", () => {
+      switchTab("scorecard");
+      sectorSelect.value = s.sector;
+      render();
+    });
+    sectorTbody.appendChild(tr);
+  }
+}
+
+document.querySelectorAll("#sectorHead th").forEach(th => {
+  th.addEventListener("click", () => {
+    const key = th.dataset.key;
+    if (sectorSortKey === key) { sectorSortDir *= -1; } else { sectorSortKey = key; sectorSortDir = key === "sector" ? 1 : -1; }
+    document.querySelectorAll("#sectorHead th").forEach(t => t.classList.remove("sorted"));
+    th.classList.add("sorted");
+    renderSectors();
+  });
+});
+
+// -------------- Tabs --------------
+
+function switchTab(view) {
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.view === view));
+  document.getElementById("scorecardView").hidden = view !== "scorecard";
+  document.getElementById("sectorsView").hidden = view !== "sectors";
+  document.getElementById("portfolioView").hidden = view !== "portfolio";
+  if (view === "portfolio") loadPortfolio();
+}
+
+document.querySelectorAll(".tab-btn").forEach(b => {
+  b.addEventListener("click", () => switchTab(b.dataset.view));
+});
+
+// -------------- Portfolio --------------
+
+const portfolioNote = document.getElementById("portfolioNote");
+const portfolioRows = document.getElementById("portfolioRows");
+
+async function loadPortfolio() {
+  portfolioNote.textContent = "Loading…";
+  portfolioRows.innerHTML = "";
+  let payload;
+  if (DEMO_MODE) {
+    payload = DEMO.portfolio;
+  } else {
+    try {
+      const res = await fetch("/api/portfolio?t=" + Date.now());
+      payload = await res.json();
+    } catch (e) {
+      portfolioNote.textContent = "Live portfolio needs the local server running (python backend/server.py) -- see README.";
+      return;
+    }
+  }
+  if (!payload.authenticated) {
+    portfolioNote.textContent = "Not connected to Schwab yet -- run python backend/schwab_explore.py start (see the README's Schwab integration section), then reload this tab.";
+    return;
+  }
+  if (!payload.positions || payload.positions.length === 0) {
+    portfolioNote.textContent = "Connected, but no positions found.";
+    return;
+  }
+
+  const portfolioSource = DEMO_MODE
+    ? `${payload.positions.length} fictional positions across two fictional accounts (a real run shows your own linked Schwab accounts here).`
+    : `${payload.positions.length} positions across your linked Schwab accounts.`;
+  portfolioNote.textContent = `${portfolioSource} "Flag" is a simple, disclosed heuristic (fixed thresholds + the falling-knife override) -- not a research-backed optimal rule; stop-loss/profit-take efficacy is genuinely mixed in the literature (see research/garp-momentum-literature-review.html, section 5).`;
+
+  for (const p of payload.positions) {
+    const tr = document.createElement("tr");
+    const matched = p.final_score !== undefined;
+    const glColor = p.unrealized_gl != null ? (p.unrealized_gl >= 0 ? "var(--green)" : "var(--red)") : "var(--muted)";
+    const flag = p.flag
+      ? `<span class="flag-pill flag-${p.flag.kind}" title="${p.flag.reason}">${p.flag.kind === "loss_cut" ? "Loss-cut watch" : "Profit-take watch"}</span>`
+      : "";
+    tr.innerHTML = `
+      <td>…${p.account_last4} (${p.account_type})</td>
+      <td class="ticker">${p.symbol}</td>
+      <td class="company" title="${p.description || ""}">${p.description || ""}</td>
+      <td class="num">${fmtNum(p.quantity, 3)}</td>
+      <td class="num">${p.average_price != null ? "$" + fmtNum(p.average_price, 2) : "—"}</td>
+      <td class="num">${p.current_price != null ? "$" + fmtNum(p.current_price, 2) : "—"}</td>
+      <td class="num">${p.market_value != null ? "$" + fmtNum(p.market_value, 2) : "—"}</td>
+      <td class="num" style="color:${glColor}">${p.unrealized_gl != null ? "$" + fmtNum(p.unrealized_gl, 2) : "—"}</td>
+      <td class="num" style="color:${glColor}">${p.unrealized_gl_pct != null ? fmtNum(p.unrealized_gl_pct, 1) + "%" : "—"}</td>
+      <td class="${matched ? "" : "unmatched"}">${matched ? p.sector : (DEMO_MODE ? "not in the demo screen" : "not in S&P 500 screen")}</td>
+      <td class="num">${matched ? fmtNum(p.final_score) : "—"}</td>
+      <td>${matched ? `<span class="action-pill ${actionClass(p.action)}">${p.action}</span>` : ""}</td>
+      <td>${flag}</td>
+    `;
+    portfolioRows.appendChild(tr);
+  }
+}
+
+// -------------- Live refresh --------------
+
+const refreshBtn = document.getElementById("refreshBtn");
+const refreshStatusEl = document.getElementById("refreshStatus");
+let pollTimer = null;
+
+function setStatus(text, isError = false) {
+  if (!text) { refreshStatusEl.hidden = true; return; }
+  refreshStatusEl.hidden = false;
+  refreshStatusEl.textContent = text;
+  refreshStatusEl.classList.toggle("is-error", isError);
+}
+
+async function startRefresh() {
+  refreshBtn.disabled = true;
+  setStatus("Starting refresh…");
+  try {
+    const res = await fetch("/api/refresh", { method: "POST" });
+    if (res.status === 409) {
+      setStatus("A refresh is already running — watching its progress…");
+      pollStatus();
+      return;
+    }
+    if (!res.ok) throw new Error("request failed");
+    pollStatus();
+  } catch (e) {
+    refreshBtn.disabled = false;
+    setStatus("Live refresh needs the local server running (python backend/server.py) — see README.", true);
+  }
+}
+
+function pollStatus() {
+  if (pollTimer) return;
+  pollTimer = setInterval(async () => {
+    try {
+      const res = await fetch("/api/refresh/status?t=" + Date.now());
+      const s = await res.json();
+      if (s.running) {
+        setStatus(s.total ? `Refreshing… ${s.current}/${s.total} (${s.ticker || ""})` : "Refreshing… fetching S&P 500 list and SPY benchmark");
+      } else {
+        clearInterval(pollTimer);
+        pollTimer = null;
+        refreshBtn.disabled = false;
+        if (s.error) {
+          setStatus("Refresh failed: " + s.error, true);
+        } else {
+          setStatus("Refreshed. Loading new data…");
+          const dataRes = await fetch("/data/scorecard.json?t=" + Date.now());
+          loadData(await dataRes.json());
+          setTimeout(() => setStatus(null), 2500);
+        }
+      }
+    } catch (e) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+      refreshBtn.disabled = false;
+      setStatus("Lost connection to the local server.", true);
+    }
+  }, 2500);
+}
+
+refreshBtn.addEventListener("click", startRefresh);
+
+// Residual-momentum refresh -- separate pipeline (Schwab price history +
+// Fama-French regression), so its own button/status/poll loop rather than
+// reusing the Finviz-refresh one above.
+const rmRefreshBtn = document.getElementById("rmRefreshBtn");
+const rmRefreshStatusEl = document.getElementById("rmRefreshStatus");
+let rmPollTimer = null;
+
+function setRmStatus(text, isError = false) {
+  if (!text) { rmRefreshStatusEl.hidden = true; return; }
+  rmRefreshStatusEl.hidden = false;
+  rmRefreshStatusEl.textContent = text;
+  rmRefreshStatusEl.classList.toggle("is-error", isError);
+}
+
+async function startRmRefresh() {
+  rmRefreshBtn.disabled = true;
+  setRmStatus("Starting residual-momentum refresh…");
+  try {
+    const res = await fetch("/api/residual_momentum/refresh", { method: "POST" });
+    if (res.status === 409) {
+      setRmStatus("Already running — watching its progress…");
+      pollRmStatus();
+      return;
+    }
+    if (!res.ok) throw new Error("request failed");
+    pollRmStatus();
+  } catch (e) {
+    rmRefreshBtn.disabled = false;
+    setRmStatus("Needs the local server running (python backend/server.py) and Schwab auth -- see README.", true);
+  }
+}
+
+function pollRmStatus() {
+  if (rmPollTimer) return;
+  rmPollTimer = setInterval(async () => {
+    try {
+      const res = await fetch("/api/residual_momentum/status?t=" + Date.now());
+      const s = await res.json();
+      if (s.running) {
+        setRmStatus(s.total ? `Refreshing residual momentum… ${s.current}/${s.total} (${s.ticker || ""})` : "Refreshing residual momentum… fetching Fama-French factors");
+      } else {
+        clearInterval(rmPollTimer);
+        rmPollTimer = null;
+        rmRefreshBtn.disabled = false;
+        if (s.error) {
+          setRmStatus("Refresh failed: " + s.error, true);
+        } else {
+          setRmStatus("Refreshed. Loading new data…");
+          const dataRes = await fetch("/data/residual_momentum.json?t=" + Date.now());
+          loadResidualMomentum(await dataRes.json());
+          rows = DATA.rows.map(mapRow);
+          computeSectorRelative();
+          render();
+          setTimeout(() => setRmStatus(null), 2500);
+        }
+      }
+    } catch (e) {
+      clearInterval(rmPollTimer);
+      rmPollTimer = null;
+      rmRefreshBtn.disabled = false;
+      setRmStatus("Lost connection to the local server.", true);
+    }
+  }, 2500);
+}
+
+rmRefreshBtn.addEventListener("click", startRmRefresh);
+
+loadResidualMomentum(RM_DATA);
+loadData(DATA, { demo: DEMO_MODE });
+</script>
+</body>
+</html>

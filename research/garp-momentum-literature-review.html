@@ -1,0 +1,615 @@
+<title>GARP Momentum Research Audit</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --paper: #f6f4ee;
+    --panel: #ffffff;
+    --panel-2: #efece2;
+    --line: #ddd8c8;
+    --ink: #201d17;
+    --muted: #6f6a58;
+    --accent: #9c6f22;
+    --accent-ink: #7a5619;
+    --good: #2f7a5c;
+    --good-bg: rgba(47,122,92,0.10);
+    --warn: #a15a17;
+    --warn-bg: rgba(161,90,23,0.10);
+    --bad: #a53d30;
+    --bad-bg: rgba(165,61,48,0.10);
+    --code-bg: #efece0;
+    --shadow: 0 1px 2px rgba(32,29,23,0.06), 0 8px 24px rgba(32,29,23,0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0e1116;
+      --panel: #161a21;
+      --panel-2: #1b2029;
+      --line: #2a2f3a;
+      --ink: #e8e6de;
+      --muted: #8b93a1;
+      --accent: #d9a857;
+      --accent-ink: #e8bd7a;
+      --good: #5fbf93;
+      --good-bg: rgba(95,191,147,0.12);
+      --warn: #e2a35a;
+      --warn-bg: rgba(226,163,90,0.12);
+      --bad: #e2776a;
+      --bad-bg: rgba(226,119,106,0.12);
+      --code-bg: #1c212a;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 30px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0e1116;
+    --panel: #161a21;
+    --panel-2: #1b2029;
+    --line: #2a2f3a;
+    --ink: #e8e6de;
+    --muted: #8b93a1;
+    --accent: #d9a857;
+    --accent-ink: #e8bd7a;
+    --good: #5fbf93;
+    --good-bg: rgba(95,191,147,0.12);
+    --warn: #e2a35a;
+    --warn-bg: rgba(226,163,90,0.12);
+    --bad: #e2776a;
+    --bad-bg: rgba(226,119,106,0.12);
+    --code-bg: #1c212a;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 30px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  ::selection { background: var(--accent); color: var(--paper); }
+
+  .masthead {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 56px 32px 28px;
+    border-bottom: 1px solid var(--line);
+  }
+  .kicker {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    margin: 0 0 14px;
+  }
+  h1.title {
+    font-family: 'Newsreader', Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(2rem, 4.2vw, 3.1rem);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    margin: 0 0 14px;
+    text-wrap: balance;
+    max-width: 20ch;
+  }
+  .dek {
+    font-family: 'Newsreader', Georgia, serif;
+    font-style: italic;
+    font-size: 1.25rem;
+    color: var(--muted);
+    max-width: 58ch;
+    margin: 0 0 20px;
+    text-wrap: balance;
+  }
+  .meta-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .meta-row b { color: var(--ink); font-weight: 600; }
+
+  .layout {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 220px minmax(0,1fr);
+    gap: 56px;
+    padding: 40px 32px 100px;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; padding: 28px 20px 80px; }
+    nav.toc { display: none; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+  }
+  nav.toc a {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 6px 0 6px 12px;
+    border-left: 2px solid var(--line);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  nav.toc a:hover { color: var(--ink); }
+  nav.toc a.active { color: var(--accent-ink); border-left-color: var(--accent); }
+
+  main { min-width: 0; max-width: 74ch; }
+
+  section { margin-bottom: 64px; scroll-margin-top: 24px; }
+  section h2 {
+    font-family: 'Newsreader', Georgia, serif;
+    font-weight: 500;
+    font-size: 1.9rem;
+    letter-spacing: -0.005em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  section .h2-sub {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin: 0 0 24px;
+  }
+  h3 {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin: 30px 0 10px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  p { margin: 0 0 16px; color: var(--ink); }
+  main > section > p:first-of-type { margin-top: 0; }
+  ul.findings { margin: 0 0 16px; padding-left: 1.2em; }
+  ul.findings li { margin-bottom: 10px; }
+  a.cite { color: var(--accent-ink); text-decoration: none; border-bottom: 1px solid currentColor; }
+  a.cite:hover { color: var(--accent); }
+  code, .mono { font-family: 'IBM Plex Mono', monospace; font-size: 0.88em; }
+
+  .tldr {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 22px 26px;
+    box-shadow: var(--shadow);
+  }
+  .tldr p:last-child { margin-bottom: 0; }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pill-good { background: var(--good-bg); color: var(--good); }
+  .pill-warn { background: var(--warn-bg); color: var(--warn); }
+  .pill-bad  { background: var(--bad-bg); color: var(--bad); }
+  .pill-flat { background: var(--panel-2); color: var(--muted); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin: 18px 0;
+    box-shadow: var(--shadow);
+  }
+  .card p:last-child { margin-bottom: 0; }
+  .card-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .current-state {
+    background: var(--code-bg);
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 14px 0;
+    overflow-x: auto;
+  }
+  .current-state b { color: var(--ink); font-weight: 600; }
+
+  .tablewrap { overflow-x: auto; margin: 8px 0 24px; border: 1px solid var(--line); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; background: var(--panel); }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    background: var(--panel-2);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+  td.gapnum { font-family: 'IBM Plex Mono', monospace; color: var(--muted); width: 28px; }
+
+  .priority-High { color: var(--bad); font-weight: 600; }
+  .priority-Med { color: var(--warn); font-weight: 600; }
+  .priority-Low { color: var(--muted); font-weight: 600; }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
+    gap: 14px;
+    margin: 20px 0;
+  }
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+  .stat .n {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.7rem;
+    font-weight: 600;
+    color: var(--accent-ink);
+    display: block;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .l { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+
+  .ticker-list { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--muted); }
+  .ticker-list b { color: var(--ink); }
+
+  blockquote {
+    margin: 20px 0;
+    padding: 4px 0 4px 20px;
+    border-left: 2px solid var(--accent);
+    font-family: 'Newsreader', Georgia, serif;
+    font-style: italic;
+    font-size: 1.08rem;
+    color: var(--ink);
+  }
+  blockquote cite {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-style: normal;
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  ol.roadmap { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+  ol.roadmap li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 4px 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  ol.roadmap li:last-child { border-bottom: none; }
+  ol.roadmap li::before {
+    content: counter(step);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--accent-ink);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  ol.roadmap .rt { font-weight: 600; }
+  ol.roadmap .rd { color: var(--muted); font-size: 14px; grid-column: 2; }
+
+  .sources {
+    font-size: 13.5px;
+    color: var(--muted);
+    columns: 1;
+  }
+  .sources li { margin-bottom: 10px; }
+  .sources a { color: var(--ink); text-decoration: none; }
+  .sources a:hover { color: var(--accent-ink); }
+  .sources .src-authors { color: var(--muted); }
+
+  footer.endcap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 32px 32px 60px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+</style>
+
+<header class="masthead">
+  <p class="kicker">Research memo · scoring model audit</p>
+  <h1 class="title">Does the GARP + Momentum model hold up?</h1>
+  <p class="dek">A literature review of the value, momentum, and quality research behind the scoring formula in <code class="mono">scorer.py</code> — where it's well-grounded, where it diverges from how these signals are actually built in the academic and practitioner literature, and what a live check of the current output data found.</p>
+  <div class="meta-row">
+    <span>Prepared for <b>GARP scoring model v1</b></span>
+    <span>Sept 2026</span>
+    <span>23 sources cited</span>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc" id="toc">
+    <a href="#tldr">Verdict</a>
+    <a href="#momentum">1 · Momentum</a>
+    <a href="#valuation">2 · GARP &amp; valuation</a>
+    <a href="#quality">3 · Balance sheet &amp; quality</a>
+    <a href="#combining">4 · Combining signals</a>
+    <a href="#risk">5 · Risk management</a>
+    <a href="#sectors">6 · Sector comparability</a>
+    <a href="#gaps">Gap table</a>
+    <a href="#audit">Data audit</a>
+    <a href="#roadmap">Next steps</a>
+    <a href="#sources">Sources</a>
+  </nav>
+
+  <main>
+
+    <section id="tldr">
+      <div class="tldr">
+        <p><b>The core thesis is sound.</b> Value, momentum, and quality are three of the most replicated anomalies in the empirical asset-pricing literature, and Peter Lynch's own GARP track record (Magellan Fund, ~29%/yr annualized, 1977&ndash;90) is real. Combining them into a single blended score — rather than three separate screens — is also exactly what the practitioner integration research recommends.</p>
+        <p><b>The current implementation leaves three kinds of gaps</b>, in order of how much they matter: (1) it's missing an entire factor category — profitability/quality — that the literature says matters <em>more</em> than either value or momentum alone when the goal is avoiding value traps and growth-fueled-by-debt; (2) two pieces of the project's original December strategy spec (relative strength vs. a benchmark, interest coverage) were quietly dropped during the Finviz rebuild, and their absence is precisely what the research flags as a weakness; (3) a handful of thresholds (1-month performance, PEG&nbsp;=&nbsp;1.0) don't match how the academic versions of these signals are actually constructed. None of this invalidates the approach — it's a well-evidenced upgrade list, not a redesign.</p>
+      </div>
+    </section>
+
+    <section id="momentum">
+      <h2>1 · Momentum</h2>
+      <p class="h2-sub">Real, replicated effect — but the model measures a different shape of it than the research does.</p>
+
+      <ul class="findings">
+        <li><b>The core effect is robust.</b> Jegadeesh &amp; Titman's original test bought the prior 12-month winner decile and sold the loser decile, holding 3&ndash;12 months, and found statistically reliable risk-adjusted excess returns; the effect later reverses over multi-year horizons and shows up across nearly every market and asset class tested since. <a class="cite" href="https://www.bauer.uh.edu/rsusmel/phd/jegadeesh-titman93.pdf">Jegadeesh &amp; Titman, 1993</a></li>
+        <li><b>It's a relative signal, not an absolute one.</b> The academic edge comes from ranking stocks <em>against each other</em> (or against a benchmark) — not from checking whether a stock's own return is positive. A stock up 1% while the index is up 15% is a momentum laggard, even though its return is "positive."</li>
+        <li><b>Trend-following is a related but distinct effect.</b> Time-series momentum — a security's own trailing-12-month return predicting its own future return, independent of any peer ranking — is separately documented and supports SMA-style trend filters specifically. <a class="cite" href="https://elmwealth.com/wp-content/uploads/2017/06/timeseriesmomentum.pdf">Moskowitz, Ooi &amp; Pedersen, 2012</a></li>
+        <li><b>Nearness to the 52-week high may be the cleaner anchor.</b> George &amp; Hwang found that proximity to the 52-week high explains a large share of momentum's profitability — arguably more than raw trailing return — and, unlike raw-return momentum, forecasts built on it don't reverse in the long run. <a class="cite" href="https://www.researchgate.net/publication/4992688_The_52-Week_High_and_Momentum_Investing">George &amp; Hwang, 2004</a></li>
+        <li><b>Much of "stock" momentum is actually sector momentum.</b> Once industry returns are stripped out, the residual stock-specific momentum shrinks substantially and at some horizons stops being statistically significant. <a class="cite" href="https://www.aqr.com/Insights/Research/Journal-Article/Do-Industries-Explain-Momentum">Moskowitz &amp; Grinblatt, 1999</a></li>
+        <li><b>The most recent month is dangerous territory.</b> Short-term reversal — last month's biggest winners underperforming next month — sits right next to momentum in the data, which is why academic momentum construction almost universally <em>skips</em> the most recent month before ranking. <a class="cite" href="https://www.newyorkfed.org/medialibrary/media/research/staff_reports/sr513.pdf">Da, Liu &amp; Schaumburg (NY Fed)</a></li>
+        <li><b>Momentum has real crash risk.</b> Momentum portfolios suffer infrequent, sharp, partly-forecastable crashes concentrated in market-rebound periods after drawdowns; the literature's fix is dynamic volatility-scaled exposure. <a class="cite" href="https://www.nber.org/system/files/working_papers/w20439/w20439.pdf">Daniel &amp; Moskowitz, 2016</a></li>
+        <li><b>A simple 200-day SMA gate genuinely works.</b> Faber's mechanical 10-month/200-day trend filter cut maximum drawdown roughly in half versus buy-and-hold across asset classes, at some cost to raw CAGR — direct support for a SMA200-based hard filter. <a class="cite" href="https://mebfaber.com/wp-content/uploads/2016/05/SSRN-id962461.pdf">Faber, 2007</a></li>
+      </ul>
+
+      <h3>Where <code class="mono">scorer.py</code> stands</h3>
+      <div class="current-state">Momentum = <b>SMA200/50/20 sign checks</b> + <b>RSI(14) zone</b> + <b>(month return &gt; 0)</b> + <b>(quarter return &gt; 0)</b></div>
+      <p>Three mismatches with the research above. First, there's no comparison to the S&amp;P&nbsp;500 or to sector — every input is self-referential, so the score can't distinguish a genuine momentum leader from a stock that's merely not falling. That's also a dropped requirement: the original Dec&nbsp;18 spec explicitly called for "relative strength vs. SOXX," and it never made it into the Finviz rebuild. Second, the "month return &gt; 0" test sits inside the exact one-month window the literature says to skip because of short-term reversal — it's rewarding a signal that's, if anything, mildly contrarian in the academic record. Third, 52-week-high proximity — arguably the single best-evidenced anchor above — isn't used at all, despite Finviz's own snapshot page already returning <code class="mono">52W High</code> / <code class="mono">52W Low</code> alongside the fields the scraper already pulls.</p>
+      <p>The falling-knife SMA200 filter, on the other hand, is squarely in line with Faber's finding and is worth keeping as-is.</p>
+    </section>
+
+    <section id="valuation">
+      <h2>2 · GARP &amp; valuation</h2>
+      <p class="h2-sub">Real track record, softer academic footing, and a well-documented flaw in the core metric.</p>
+
+      <ul class="findings">
+        <li><b>Lynch's record is the strongest single data point</b>, but there's no Fama-French-style rigorous multi-decade factor backtest of "GARP" the way there is for value or momentum individually — it's a blend, and blends are inherently harder to isolate in the data than a single clean factor.</li>
+        <li><b>GARP's edge is highly time-period dependent.</b> A CFA Institute retrospective found GARP behaved like a growth strategy from 1989&ndash;2001 and "more like value" after the dot-com bust — and that a meaningful share of its apparent edge simply comes from screening out negative-earnings stocks, not from the PEG calculation itself. <a class="cite" href="https://rpc.cfainstitute.org/blogs/enterprising-investor/2019/garp-investing-golden-or-garbage">CFA Institute, 2019</a></li>
+        <li><b>Growth + low P/E alone isn't a distinctive edge.</b> Portfolios formed at the simple intersection of high earnings growth and low P/E don't show outperformance on their own in direct academic tests — the "reasonable price" half needs to be paired with a quality signal to show a robust edge, which is a direct segue into the gap below.</li>
+        <li><b>PEG&nbsp;=&nbsp;1.0 is a rule of thumb, not a derived threshold.</b> It shows up repeatedly in the literature described exactly that way — a convention, not an empirically fit cutoff.</li>
+        <li><b>The growth half of PEG is a forward analyst estimate — and those are systematically optimistic.</b> Analyst forecast optimism is well documented and gets worse the further out and the higher-growth the estimate; there's also a measurable trade-off where more optimistic forecasts are, on average, less accurate. <a class="cite" href="http://www.econ.yale.edu/~shiller/behfin/2001-05-11/hong-kubik.pdf">Hong &amp; Kubik</a></li>
+      </ul>
+
+      <h3>Where <code class="mono">scorer.py</code> stands</h3>
+      <div class="current-state">Valuation = <b>Forward P/E</b> (≤15 → 15pt · ≤25 → 10pt · ≤40 → 5pt) + <b>PEG</b> (≤1.2 → 20pt · ≤1.8 → 12pt · ≤2.5 → 5pt)</div>
+      <p>The bands themselves are reasonable, conventional GARP thresholds. The real exposure is that a PEG of, say, 1.1 gets the full 20 points with no cross-check against whether the embedded growth estimate is even plausible — comparing forward growth to trailing growth, or fading unusually high estimates, would directly address the optimism-bias finding above rather than trusting the consensus number at face value.</p>
+    </section>
+
+    <section id="quality">
+      <h2>3 · Balance sheet &amp; quality</h2>
+      <p class="h2-sub">The single biggest blind spot in the current model.</p>
+
+      <ul class="findings">
+        <li><b>Profitability is its own return-predictive factor</b> — comparable in strength to value — and a combined quality+value strategy roughly <em>doubles</em> the monthly excess return of either alone (0.61%/mo combined vs. 0.28%/0.31% solo, in Novy-Marx's original sample). <a class="cite" href="https://mysimon.rochester.edu/novy-marx/research/QDoVI.pdf">Novy-Marx, 2013</a></li>
+        <li><b>Piotroski's F-score</b> — nine binary profitability/leverage/efficiency checks — added ~7.5%/yr to value strategies in the original study and ~10%/yr in more recent international out-of-sample tests, nearly two decades later. <a class="cite" href="https://d-nb.info/121155211X/34">Piotroski F-Score, international evidence</a></li>
+        <li><b>"Growth bought with debt" has a precise academic answer, and it isn't a debt ratio.</b> Sloan's accrual anomaly shows firms whose earnings are backed by real cash flow (low accruals) outperform firms whose earnings growth leans more on accounting accruals by roughly 10&ndash;12%/yr — a more targeted test of earnings quality than solvency ratios alone. <a class="cite" href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1793364">Sloan, 1996; Dechow, Khimich &amp; Sloan review</a></li>
+        <li><b>Interest coverage identifies a distinct distress category debt/equity misses.</b> "Zombie firm" research classifies companies with interest coverage below 1x as structurally distressed regardless of their leverage ratio — a company can carry a fine debt/equity ratio and still not earn enough to cover its interest expense. <a class="cite" href="https://www.quantrocket.com/blog/financial-distress-factors/">Altman Z-score &amp; interest coverage</a></li>
+        <li><b>The closest commercial analogue to this app bakes quality in explicitly.</b> The iShares MSCI USA Quality GARP ETF markets its profitability/quality screen — alongside growth and value — as the actual differentiator versus a plain growth index. <a class="cite" href="https://www.ishares.com/us/insights/garp-investing-etf-valuations">iShares GARP methodology note</a></li>
+      </ul>
+
+      <h3>Where <code class="mono">scorer.py</code> stands</h3>
+      <div class="current-state">Balance sheet = <b>Debt/Equity</b> (≤0.5 → 10pt · ≤1.0 → 7pt · ≤2.0 → 3pt) + <b>Current Ratio</b> (≥1.0 → 5pt)</div>
+      <p>This bucket is a solvency check, not a quality check — it asks "is this company over-levered?" but never "is this company's growth actually good?" No ROE, ROIC, or margin signal; no interest coverage; no earnings-quality proxy. That last one is also a dropped requirement — the original spec explicitly wanted interest coverage and a dilution check, and neither survived the Finviz rebuild. The frustrating part is the fix is mostly free: Finviz's snapshot page already returns <code class="mono">ROA</code>, <code class="mono">ROE</code>, <code class="mono">ROIC</code>, <code class="mono">Gross&nbsp;Margin</code>, <code class="mono">Oper.&nbsp;Margin</code>, and <code class="mono">Profit&nbsp;Margin</code> — the scraper pulls the full table already and simply never reads these keys back out.</p>
+    </section>
+
+    <section id="combining">
+      <h2>4 · Combining signals</h2>
+      <p class="h2-sub">The one part of the architecture that's already correct.</p>
+      <ul class="findings">
+        <li><b>Value and momentum are negatively correlated but independently profitable.</b> Asness, Moskowitz &amp; Pedersen found roughly &minus;0.17 correlation between the two in the US (similarly negative globally) — combining them smooths performance rather than just averaging the returns. <a class="cite" href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2174501">Asness, Moskowitz &amp; Pedersen, 2013</a></li>
+        <li><b>An integrated single score beats separately-screened sub-portfolios.</b> AQR's "don't just mix, integrate" research found that one blended signal — resolving factor trade-offs together at the stock level — outperforms combining three separately-selected screens. This directly validates building one <code class="mono">FinalScore</code> rather than running independent Value/Momentum/Quality screens and intersecting the results.</li>
+      </ul>
+      <blockquote>Combining factors reduces the risk of prolonged underperformance because they're imperfectly correlated — when value underperforms, momentum often outperforms, and vice versa.<cite>— AQR, on multi-factor integration</cite></blockquote>
+      <p>Nothing to fix here structurally. The gap upstream (§3) is <em>which</em> factors feed the blend, not the blending mechanism itself — adding a Quality bucket is a fourth input into the same architecture, not a redesign of it.</p>
+    </section>
+
+    <section id="risk">
+      <h2>5 · Risk management</h2>
+      <p class="h2-sub">Screening candidates and managing a held position are different problems — the model only does the first.</p>
+      <ul class="findings">
+        <li><b>Stop-loss efficacy is genuinely mixed in the data</b> — stop-losses measurably reduce the disposition-effect tendency to hold losers too long, but don't unambiguously improve risk-adjusted returns, and can cut off recoveries. Worth having for discipline, not because the literature promises added return. <a class="cite" href="https://oro.open.ac.uk/44069/1/stoplosses-prepub.pdf">Disposition effect &amp; stop-losses</a></li>
+        <li><b>~20&ndash;30 holdings diversifies away most idiosyncratic risk</b> for a stock-picking portfolio — worth keeping in mind when actually sizing "fixed capital rotated between positions" so weekly rotation doesn't quietly concentrate into a handful of names. <a class="cite" href="https://www.cambridge.org/core/services/aop-cambridge-core/content/view/CE5CDF2C7225FC1E0EDE3E700A3C66A7/S0022109000012680a.pdf/how-many-stocks-make-a-diversified-portfolio.pdf">Statman, diversification literature</a></li>
+        <li><b>Published anomalies decay after publication</b> — an average ~50% return decline post-publication across 97 tested predictors, with larger decay for the strongest in-sample performers. PEG, momentum, and RSI have all been public for 20&ndash;40 years; a reasonable expectation-setter, not a reason to abandon the approach. <a class="cite" href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2156623">McLean &amp; Pontiff, 2016</a></li>
+      </ul>
+      <h3>Where the app stands</h3>
+      <p>The falling-knife filter and LateLegPenalty are reasonable, proportionate nods to crash/reversal risk on the <em>selection</em> side. But nothing in <code class="mono">scorer.py</code> tracks a position once you're in it — no entry price, no unrealized gain, no exit signal. The original Dec&nbsp;18 spec explicitly called for "defined profit-taking + loss-cutting rules," and that requirement never made it past the strategy-definition stage into code. The app today only answers "what should I buy," never "should I still be holding this."</p>
+    </section>
+
+    <section id="sectors">
+      <h2>6 · Sector comparability &amp; picking within a sector</h2>
+      <p class="h2-sub">Added after the Sectors-tab rollup raised a sharper question: is a fixed valuation band even valid across sectors, and does a strong sector mean "just buy the ETF"?</p>
+
+      <h3>Is P/E-style valuation even comparable across sectors?</h3>
+      <p>Not uniformly. Industry-specific valuation research finds P/E is the preferred multiple in roughly 20 of 25 industry groups — but the exceptions are exactly the sectors currently sitting at the top of the rollup. Banks and insurers are conventionally valued on <b>Price/Book</b>, not P/E, because leverage <em>is</em> the business model, not a risk to price around. REITs are valued on <b>P/FFO or P/AFFO</b>, because real-estate depreciation is a large non-cash charge that distorts GAAP net income into near-meaninglessness. Energy, materials, and telecom are conventionally valued on <b>EV/EBITDA</b> rather than P/E — and even that needs <b>mid-cycle normalization</b>, since trailing or forward earnings at a commodity-cycle extreme can make the multiple look artificially cheap or expensive relative to a normalized run rate. <a class="cite" href="https://ibinterviewquestions.com/guides/valuation-investment-banking/ev-revenue-pe-other-multiples-when-ev-ebitda-not-enough">Sector applicability of EV/EBITDA and other multiples</a> · <a class="cite" href="https://www.fairpriceindex.com/education/how-to-value-reit-stocks">REIT FFO/AFFO valuation</a></p>
+
+      <div class="card">
+        <div class="card-label">What this looks like in the live data at the time of writing</div>
+        <p>A direct check of the current run: <b>52% of Energy stocks (11 of 21)</b> and <b>42% of Financial Services stocks (29 of 69)</b> are tied at the maximum 25/25 Valuation score — versus 22% in Technology. The underlying PEG ratios inside Energy alone span 0.27 to 3.94, a real spread the fixed bands can no longer see once a stock clears the top threshold. That compression is a plausible reason Energy and Financial Services currently lead the sector rollup: it isn't only that they're strong, it's that the scoring runs out of room to tell "cheap" from "cheapest" in exactly the two sectors where P/E-style valuation is on the shakiest methodological ground to begin with.</p>
+      </div>
+
+      <h3>Does a hot sector mean you should just buy the ETF?</h3>
+      <p>The evidence points at both layers mattering, not one instead of the other:</p>
+      <ul class="findings">
+        <li><b>Sector strength is real, and often larger than stock-specific momentum.</b> Restating §1: once industry effects are controlled for, individual-stock momentum profits become "significantly weaker, and for the most part, statistically insignificant" (Moskowitz &amp; Grinblatt, 1999).</li>
+        <li><b>But stripping sector/style exposure out and ranking on what's left — "residual momentum" — beats total-return momentum; it doesn't lose to it.</b> Blitz, Huij &amp; Martens found residual momentum earns risk-adjusted profits <em>roughly twice as large</em> as total-return momentum, is more consistent over time, and is less concentrated in the crash-prone extremes — a result that has held up out-of-sample globally since publication. <a class="cite" href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2319861">Blitz, Huij &amp; Martens, 2011</a></li>
+        <li><b>Long-standing practitioner precedent agrees.</b> William O'Neil's CANSLIM system — in continuous use since the 1980s — makes this an explicit rule: buy the <em>leading</em> stocks in <em>leading</em> industry groups, not the sector average. Practitioner heuristic, not peer-reviewed, but directly on point. <a class="cite" href="https://www.disnat.com/en/learning/trading-basics/stock-selection-strategies/canslim">CANSLIM overview</a></li>
+      </ul>
+      <p>Put together: a hot sector is a reason to be looking there, not a reason to stop at the ETF. The research specifically rewards finding the strongest <em>names</em> within the strongest <em>sectors</em> — which the app doesn't yet surface directly (gaps #10&ndash;11 below).</p>
+
+      <h3>The standard fix: sector-relative z-scoring</h3>
+      <p>Subtract the sector mean from each stock's raw metric and divide by the sector's standard deviation, so a stock is ranked against its own peers rather than the whole market. It directly addresses the compression problem above. The pitfall to know going in: it doesn't guarantee equal representation across sectors in a single combined ranking, and it isn't worth applying to metrics that don't actually vary much by sector to begin with. <a class="cite" href="https://www.quantrocket.com/blog/sector-neutralization/">Sector-neutralization methodology</a></p>
+    </section>
+
+    <section id="gaps">
+      <h2>Gap table</h2>
+      <p class="h2-sub">Every item below maps to a specific, named place in <code class="mono">scorer.py</code>.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th></th><th>Gap</th><th>Research basis</th><th>Effort</th><th>Priority</th></tr></thead>
+          <tbody>
+            <tr><td class="gapnum">1</td><td><b>No profitability/quality sub-score</b></td><td>Novy-Marx; Piotroski F-score</td><td>Low — fields already scraped, unused</td><td class="priority-High">High</td></tr>
+            <tr><td class="gapnum">2</td><td><b>Missing valuation/balance data silently scores as "neutral"</b></td><td>See data audit below</td><td>Low — flag instead of default</td><td class="priority-High">High</td></tr>
+            <tr><td class="gapnum">3</td><td><b>No relative strength vs. benchmark/sector</b></td><td>Jegadeesh &amp; Titman; Moskowitz &amp; Grinblatt · dropped from original spec</td><td>Medium — needs SPY/sector fetch</td><td class="priority-High">High</td></tr>
+            <tr><td class="gapnum">4</td><td><b>No position-level exit rules</b></td><td>Original spec requirement, never implemented</td><td>High — new data model (holdings)</td><td class="priority-High">High</td></tr>
+            <tr><td class="gapnum">5</td><td><b>1-month return sits in the reversal-contaminated window</b></td><td>Short-term reversal literature</td><td>Low — swap/supplement with 3–12mo</td><td class="priority-Med">Medium</td></tr>
+            <tr><td class="gapnum">6</td><td><b>No 52-week-high proximity signal</b></td><td>George &amp; Hwang, 2004</td><td>Low — field already available from Finviz</td><td class="priority-Med">Medium</td></tr>
+            <tr><td class="gapnum">7</td><td><b>No interest-coverage / zombie-firm check</b></td><td>Original spec requirement · distress research</td><td>Medium — not in Finviz snapshot, needs a workaround</td><td class="priority-Med">Medium</td></tr>
+            <tr><td class="gapnum">8</td><td><b>PEG taken at face value, no discount for analyst optimism</b></td><td>Analyst forecast optimism-bias research</td><td>Medium/High — needs a plausibility check</td><td class="priority-Low">Low</td></tr>
+            <tr><td class="gapnum">9</td><td><b>No market-regime dampener</b></td><td>Daniel &amp; Moskowitz momentum-crash research</td><td>Medium — new signal (SPX vs its own SMA200)</td><td class="priority-Low">Low</td></tr>
+            <tr><td class="gapnum">10</td><td><b>No within-sector rank or percentile shown</b></td><td>Directly requested; CANSLIM "leader in a leading industry"</td><td>Low — pure client-side computation from data already loaded</td><td class="priority-High">High</td></tr>
+            <tr><td class="gapnum">11</td><td><b>Valuation/Quality bands are one-size-fits-all across sectors</b></td><td>Sector-specific multiples research; empirical 52%/42% ceiling-clustering in Energy/Financials</td><td>Medium — sector-relative z-scoring of existing metrics</td><td class="priority-High">High</td></tr>
+            <tr><td class="gapnum">12</td><td><b>P/E-style metrics used even where the sector convention is different (P/B for financials, EV/EBITDA for energy)</b></td><td>Industry-specific valuation-model research</td><td>Medium — Finviz snapshot already returns EV/EBITDA and P/B, just unused</td><td class="priority-Med">Medium</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="audit">
+      <h2>Data audit</h2>
+      <p class="h2-sub">Not literature — a direct check of the last full run (501 tickers, generated Sept&nbsp;1, 2026), to answer the original question: are default points masquerading as measurements?</p>
+
+      <div class="stat-row">
+        <div class="stat"><span class="n">76 / 501</span><span class="l">rows carry at least one neutral-fallback point (15.2%)</span></div>
+        <div class="stat"><span class="n">9</span><span class="l">rows where <em>both</em> Fwd P/E and PEG are missing — the entire 35-pt Valuation bucket is assumption</span></div>
+        <div class="stat"><span class="n">14</span><span class="l">tickers would drop a full action tier under a conservative (non-neutral) treatment of missing data</span></div>
+        <div class="stat"><span class="n">~0%</span><span class="l">missing on every Momentum input (SMA/RSI/perf) — that bucket is clean</span></div>
+      </div>
+
+      <p><b>Where it happens:</b> <code class="mono">fwd_pe_points()</code>, <code class="mono">peg_points()</code>, and <code class="mono">debt_points()</code> each return a flat 5-point "neutral" score when the underlying Finviz field is blank, rather than flagging the value as unknown. PEG is missing on 9.2% of tickers, Debt/Equity on 6.6%, Forward P/E on 1.8%. <code class="mono">current_ratio_points()</code> goes the other way — missing defaults to 0, a quiet fail rather than a quiet pass — which is a smaller, opposite-direction version of the same issue.</p>
+
+      <div class="card">
+        <div class="card-label">Both Fwd P/E and PEG missing — Valuation bucket is 10/35 of pure assumption</div>
+        <p class="ticker-list"><b>ERIE · MRNA · ARE · AMCR · FDX · L · FDXF · HONA · STZ</b></p>
+      </div>
+
+      <p><b>Sensitivity check:</b> re-scoring the same run with missing fields treated as 0 ("unproven") instead of 5 ("neutral") moves 14 tickers down a full action tier — 6 from BUY to WATCH, 8 from WATCH to AVOID. None of the current BUY/ADD tier is affected; the exposure sits entirely in the BUY and WATCH tiers, exactly where a user is most likely to act on the signal.</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Ticker</th><th class="num">Shown score</th><th>Shown action</th><th class="num">Conservative score</th><th>Conservative action</th></tr></thead>
+          <tbody>
+            <tr><td>BKNG</td><td class="num">68.0</td><td><span class="pill pill-warn">BUY</span></td><td class="num">63.0</td><td><span class="pill pill-flat">WATCH</span></td></tr>
+            <tr><td>CAH</td><td class="num">67.0</td><td><span class="pill pill-warn">BUY</span></td><td class="num">62.0</td><td><span class="pill pill-flat">WATCH</span></td></tr>
+            <tr><td>KHC</td><td class="num">67.0</td><td><span class="pill pill-warn">BUY</span></td><td class="num">62.0</td><td><span class="pill pill-flat">WATCH</span></td></tr>
+            <tr><td>PGR</td><td class="num">67.0</td><td><span class="pill pill-warn">BUY</span></td><td class="num">62.0</td><td><span class="pill pill-flat">WATCH</span></td></tr>
+            <tr><td>CF</td><td class="num">65.5</td><td><span class="pill pill-warn">BUY</span></td><td class="num">60.5</td><td><span class="pill pill-flat">WATCH</span></td></tr>
+            <tr><td>SWKS</td><td class="num">65.0</td><td><span class="pill pill-warn">BUY</span></td><td class="num">60.0</td><td><span class="pill pill-flat">WATCH</span></td></tr>
+            <tr><td>ERIE</td><td class="num">57.0</td><td><span class="pill pill-flat">WATCH</span></td><td class="num">47.0</td><td><span class="pill pill-bad">AVOID</span></td></tr>
+            <tr><td>BAX</td><td class="num">54.0</td><td><span class="pill pill-flat">WATCH</span></td><td class="num">49.0</td><td><span class="pill pill-bad">AVOID</span></td></tr>
+            <tr><td>HCA</td><td class="num">54.0</td><td><span class="pill pill-flat">WATCH</span></td><td class="num">49.0</td><td><span class="pill pill-bad">AVOID</span></td></tr>
+            <tr><td>HPQ</td><td class="num">53.5</td><td><span class="pill pill-flat">WATCH</span></td><td class="num">48.5</td><td><span class="pill pill-bad">AVOID</span></td></tr>
+            <tr><td>MRNA</td><td class="num">53.0</td><td><span class="pill pill-flat">WATCH</span></td><td class="num">43.0</td><td><span class="pill pill-bad">AVOID</span></td></tr>
+            <tr><td>ARE</td><td class="num">52.0</td><td><span class="pill pill-flat">WATCH</span></td><td class="num">42.0</td><td><span class="pill pill-bad">AVOID</span></td></tr>
+            <tr><td>DELL</td><td class="num">51.0</td><td><span class="pill pill-flat">WATCH</span></td><td class="num">46.0</td><td><span class="pill pill-bad">AVOID</span></td></tr>
+            <tr><td>CMCSA</td><td class="num">50.0</td><td><span class="pill pill-flat">WATCH</span></td><td class="num">45.0</td><td><span class="pill pill-bad">AVOID</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>This is the exact "misrepresentation, not omission" risk flagged going in: the dashboard currently renders a stock that earned its valuation score identically to one that defaulted into it, with no visual distinction between the two.</p>
+    </section>
+
+    <section id="roadmap">
+      <h2>Recommended next steps</h2>
+      <p class="h2-sub">Ordered for maximum evidence-backed improvement per unit of effort.</p>
+      <ol class="roadmap">
+        <li><span class="rt">Stop defaulting missing data to "neutral" — surface it instead.</span><span class="rd">Flag fallback-derived scores in the data model and show it in the dashboard (e.g. a muted "est." marker) rather than rendering it identically to a real measurement. Directly closes gap&nbsp;#2.</span></li>
+        <li><span class="rt">Add a Quality/Profitability bucket from data already being scraped.</span><span class="rd">ROE, ROIC, and margin fields are sitting unused in the Finviz response today. Closes gap&nbsp;#1, the highest-leverage change in this review.</span></li>
+        <li><span class="rt">Add 52-week-high proximity to Momentum.</span><span class="rd">Also already available from Finviz (<code class="mono">52W High</code>/<code class="mono">52W Low</code>). Closes gap&nbsp;#6.</span></li>
+        <li><span class="rt">Add relative strength vs. SPY and sector.</span><span class="rd">Requires fetching one extra snapshot (SPY) and comparing perf fields; restores the original spec's "vs. SOXX" requirement in more general form. Closes gap&nbsp;#3.</span></li>
+        <li><span class="rt">Scope position tracking as its own feature.</span><span class="rd">Entry price, unrealized gain/loss, and exit signals need a "what I hold" data model the screener doesn't have today — worth a separate design pass rather than folding into <code class="mono">scorer.py</code>. Closes gap&nbsp;#4.</span></li>
+        <li><span class="rt">Add a within-sector rank/percentile badge.</span><span class="rd">Pure client-side computation from data already loaded — no scoring change, no backend change. Closes gap&nbsp;#10.</span></li>
+        <li><span class="rt">Sector-relative z-score Valuation and Quality as a second lens alongside the absolute score.</span><span class="rd">Same PEG/Fwd&nbsp;P/E/ROIC/ROE/Margin inputs, normalized within sector instead of (or in addition to) fixed global bands — directly fixes the ceiling-compression shown above. Closes gap&nbsp;#11.</span></li>
+      </ol>
+    </section>
+
+    <section id="sources">
+      <h2>Sources</h2>
+      <ol class="sources">
+        <li><a href="https://www.bauer.uh.edu/rsusmel/phd/jegadeesh-titman93.pdf">Jegadeesh, N. &amp; Titman, S. (1993). Returns to Buying Winners and Selling Losers.</a> <span class="src-authors">Journal of Finance.</span></li>
+        <li><a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2174501">Asness, C., Moskowitz, T. &amp; Pedersen, L. (2013). Value and Momentum Everywhere.</a> <span class="src-authors">Journal of Finance 68(3).</span></li>
+        <li><a href="https://www.nber.org/system/files/working_papers/w20439/w20439.pdf">Daniel, K. &amp; Moskowitz, T. (2016). Momentum Crashes.</a> <span class="src-authors">NBER Working Paper 20439.</span></li>
+        <li><a href="https://mysimon.rochester.edu/novy-marx/research/QDoVI.pdf">Novy-Marx, R. (2013). The Quality Dimension of Value Investing.</a></li>
+        <li><a href="https://d-nb.info/121155211X/34">Piotroski F-Score: International Evidence.</a></li>
+        <li><a href="https://www.researchgate.net/publication/4992688_The_52-Week_High_and_Momentum_Investing">George, T. &amp; Hwang, C-Y. (2004). The 52-Week High and Momentum Investing.</a> <span class="src-authors">Journal of Finance.</span></li>
+        <li><a href="https://www.aqr.com/Insights/Research/Journal-Article/Do-Industries-Explain-Momentum">Moskowitz, T. &amp; Grinblatt, M. (1999). Do Industries Explain Momentum?</a> <span class="src-authors">Journal of Finance.</span></li>
+        <li><a href="https://www.aqr.com/-/media/AQR/Documents/Journal-Articles/JPM-Fact-Fiction-and-Momentum-Investing.pdf">Asness, Frazzini, Israel &amp; Moskowitz. Fact, Fiction and Momentum Investing.</a> <span class="src-authors">Journal of Portfolio Management.</span></li>
+        <li><a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1793364">Dechow, P., Khimich, N. &amp; Sloan, R. The Accrual Anomaly.</a> <span class="src-authors">Building on Sloan (1996).</span></li>
+        <li><a href="https://elmwealth.com/wp-content/uploads/2017/06/timeseriesmomentum.pdf">Moskowitz, T., Ooi, Y.H. &amp; Pedersen, L. (2012). Time Series Momentum.</a> <span class="src-authors">Journal of Financial Economics.</span></li>
+        <li><a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2156623">McLean, R.D. &amp; Pontiff, J. (2016). Does Academic Research Destroy Stock Return Predictability?</a> <span class="src-authors">Journal of Finance.</span></li>
+        <li><a href="https://mebfaber.com/wp-content/uploads/2016/05/SSRN-id962461.pdf">Faber, M. (2007). A Quantitative Approach to Tactical Asset Allocation.</a> <span class="src-authors">Journal of Wealth Management.</span></li>
+        <li><a href="https://rpc.cfainstitute.org/blogs/enterprising-investor/2019/garp-investing-golden-or-garbage">CFA Institute (2019). GARP Investing: Golden or Garbage?</a></li>
+        <li><a href="https://www.ishares.com/us/insights/garp-investing-etf-valuations">iShares MSCI USA Quality GARP ETF — methodology note.</a></li>
+        <li><a href="https://www.quantrocket.com/blog/financial-distress-factors/">Financial Distress Factors: Altman Z-Score and Interest Coverage Ratio.</a></li>
+        <li><a href="https://www.cambridge.org/core/services/aop-cambridge-core/content/view/CE5CDF2C7225FC1E0EDE3E700A3C66A7/S0022109000012680a.pdf/how-many-stocks-make-a-diversified-portfolio.pdf">How Many Stocks Make a Diversified Portfolio?</a> <span class="src-authors">Journal of Financial and Quantitative Analysis.</span></li>
+        <li><a href="https://oro.open.ac.uk/44069/1/stoplosses-prepub.pdf">Stock Market Investors' Use of Stop Losses and the Disposition Effect.</a></li>
+        <li><a href="http://www.econ.yale.edu/~shiller/behfin/2001-05-11/hong-kubik.pdf">Hong, H. &amp; Kubik, J. Analyzing the Analysts: Career Concerns and Biased Earnings Forecasts.</a></li>
+        <li><a href="https://ibinterviewquestions.com/guides/valuation-investment-banking/ev-revenue-pe-other-multiples-when-ev-ebitda-not-enough">EV/Revenue, P/E, and Other Multiples: When EV/EBITDA Is Not Enough.</a> <span class="src-authors">Sector applicability of valuation multiples.</span></li>
+        <li><a href="https://www.fairpriceindex.com/education/how-to-value-reit-stocks">How to Value REIT Stocks: FFO, AFFO &amp; NAV.</a></li>
+        <li><a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2319861">Blitz, D., Huij, J. &amp; Martens, M. (2011). Residual Momentum.</a> <span class="src-authors">Journal of Empirical Finance 18(3).</span></li>
+        <li><a href="https://www.disnat.com/en/learning/trading-basics/stock-selection-strategies/canslim">CANSLIM: Stock Selection Strategy Overview.</a> <span class="src-authors">Practitioner methodology, William O'Neil.</span></li>
+        <li><a href="https://www.quantrocket.com/blog/sector-neutralization/">Sector Neutralization: Why It Matters and How to Use It.</a></li>
+      </ol>
+    </section>
+
+  </main>
+</div>
+
+<footer class="endcap">
+  GARP Momentum Scorecard — research audit · scorer.py v1 · generated for internal use, not investment advice
+</footer>
+
+<script>
+  const links = [...document.querySelectorAll('nav.toc a')];
+  const sections = links.map(a => document.querySelector(a.getAttribute('href')));
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      const idx = sections.indexOf(e.target);
+      if (idx === -1) return;
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        links[idx].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -75% 0px' });
+  sections.forEach(s => s && io.observe(s));
+</script>

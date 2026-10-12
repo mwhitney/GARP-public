@@ -1,0 +1,8 @@
+requests
+beautifulsoup4
+lxml
+numpy
+
+# Optional: only needed for the Schwab-backed features (Portfolio tab,
+# residual momentum) -- see README "Schwab integration".
+# schwab-py
