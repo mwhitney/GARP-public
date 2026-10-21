@@ -3,6 +3,8 @@
 Weekly GARP (Growth at a Reasonable Price) + Momentum swing-trading scorecard
 for the S&P 500, rendered as a static HTML dashboard.
 
+Built with [Claude Code](https://claude.com/claude-code).
+
 > **Personal research project -- not investment advice.** Nothing here is a
 > recommendation to buy or sell anything. The scores are a transparent way to
 > organize a screen, not a validated strategy: the backtest in this repo (see
